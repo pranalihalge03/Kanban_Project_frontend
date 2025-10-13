@@ -1,0 +1,385 @@
+<div class="kanban-board">
+  <!-- Header -->
+  <div class="board-header">
+    <h1>Kanban Board</h1>
+    
+    <!-- Page Navigation -->
+    <div class="header-actions">
+      <button
+        (click)="setCurrentPage(1)"
+        [class]="currentPage === 1 ? 'btn btn-primary' : 'btn btn-secondary'"
+      >
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+        This Week
+      </button>
+      <button
+        (click)="setCurrentPage(2)"
+        [class]="currentPage === 2 ? 'btn btn-primary' : 'btn btn-secondary'"
+      >
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+        All Tasks
+      </button>
+      <button
+        (click)="setCurrentPage(3)"
+        [class]="currentPage === 3 ? 'btn btn-primary' : 'btn btn-secondary'"
+      >
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Backlog
+      </button>
+      
+      <!-- Action Buttons - Only on Page 2 -->
+      <ng-container *ngIf="currentPage === 2">
+        <button class="btn btn-primary" (click)="openAddTaskModal()">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          Add Task
+        </button>
+        <button class="btn btn-success" (click)="generateWithAI()">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+          </svg>
+          Generate with AI
+        </button>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- ============= KANBAN BOARD VIEW (Page 1 & 2) ============= -->
+  <div *ngIf="currentPage !== 3" class="board-columns">
+    <div *ngFor="let column of columns" class="column">
+      <!-- Column Header -->
+      <div [class]="column.headerClass">
+        <h3>{{ column.title }}</h3>
+        <span class="task-count">{{ getColumnCount(column.id) }}</span>
+      </div>
+
+      <!-- Task Cards -->
+      <div class="column-content">
+        <div
+          *ngFor="let task of getColumnTasks(column.id)"
+          class="task-card"
+          (click)="openTaskDetails(task)"
+        >
+          <div class="task-header">
+            <h4>{{ task.title }}</h4>
+          </div>
+          <p class="task-description">{{ task.description }}</p>
+          
+          <div class="task-footer">
+            <!-- Assignee Avatar -->
+            <div class="assignee" [style.background-color]="getAssigneeColor(task.assignee)">
+              {{ task.assignee }}
+            </div>
+            
+            <!-- Task Meta -->
+            <div class="task-meta">
+              <span>❤️ {{ task.likes }}</span>
+              <span>💬 {{ task.comments }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============= BACKLOG PAGE (Page 3) ============= -->
+  <div *ngIf="currentPage === 3" class="backlog-container">
+    <!-- Backlog Header with Filters -->
+    <div class="backlog-header">
+      <div class="backlog-filters">
+        <!-- Search -->
+        <div class="filter-group">
+          <input 
+            type="text" 
+            [(ngModel)]="backlogSearchQuery" 
+            placeholder="🔍 Search tasks..."
+            class="search-input"
+          />
+        </div>
+
+        <!-- Week Filter -->
+        <div class="filter-group">
+          <select [(ngModel)]="backlogFilterWeek" class="filter-select">
+            <option value="">All Weeks</option>
+            <option *ngFor="let week of getAvailableWeeks()" [value]="week">
+              Week {{ week }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="filter-group">
+          <select [(ngModel)]="backlogFilterStatus" class="filter-select">
+            <option value="">All Status</option>
+            <option value="completed">Completed</option>
+            <option value="pending">Pending</option>
+          </select>
+        </div>
+
+        <!-- Assignee Filter -->
+        <div class="filter-group">
+          <select [(ngModel)]="backlogFilterAssignee" class="filter-select">
+            <option value="">All Assignees</option>
+            <option *ngFor="let assignee of getUniqueAssignees()" [value]="assignee">
+              {{ assignee | uppercase }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Sort Order -->
+        <div class="filter-group">
+          <select [(ngModel)]="backlogSortOrder" class="filter-select">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+          </select>
+        </div>
+
+        <!-- Clear Filters -->
+        <button class="btn btn-secondary" (click)="clearBacklogFilters()">
+          Clear Filters
+        </button>
+      </div>
+
+      <!-- Export Options -->
+      <div class="backlog-actions">
+        <button class="btn btn-primary" (click)="openAddTaskModal()">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          Add Task
+        </button>
+        <button class="btn btn-success" (click)="exportBacklogCSV()">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          Export CSV
+        </button>
+        <button class="btn btn-danger" (click)="exportBacklogPDF()">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+          </svg>
+          Export PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Week Groups -->
+    <div class="backlog-weeks">
+      <div *ngFor="let week of getBacklogWeekGroups()" class="week-group">
+        <!-- Week Header -->
+        <div class="week-header" (click)="toggleWeekExpansion(week)">
+          <div class="week-info">
+            <span class="week-toggle">
+              {{ week.expanded ? '▼' : '▶' }}
+            </span>
+            <h3>{{ week.weekLabel }}</h3>
+            <span class="week-date-range">
+              {{ week.startDate | date:'MMM d' }} - {{ week.endDate | date:'MMM d, y' }}
+            </span>
+            <span class="week-task-count">{{ week.tasks.length }} tasks</span>
+          </div>
+          
+          <!-- Progress Bar -->
+          <div class="week-progress">
+            <div class="progress-bar">
+              <div 
+                class="progress-fill" 
+                [style.width.%]="week.completionRate"
+              ></div>
+            </div>
+            <span class="progress-text">{{ week.completionRate | number:'1.0-0' }}% Complete</span>
+          </div>
+        </div>
+
+        <!-- Week Tasks (Collapsible) -->
+        <div *ngIf="week.expanded" class="week-tasks">
+          <div 
+            *ngFor="let task of week.tasks" 
+            class="backlog-task-card"
+            [class.completed]="task.completed"
+            (click)="openTaskDetails(task)"
+          >
+            <div class="task-main">
+              <div class="task-status">
+                <span *ngIf="task.completed" class="status-badge completed">✓ Completed</span>
+                <span *ngIf="!task.completed" class="status-badge pending">○ Pending</span>
+              </div>
+              
+              <div class="task-info">
+                <h4>{{ task.title }}</h4>
+                <p>{{ task.description }}</p>
+              </div>
+            </div>
+
+            <div class="task-details">
+              <div class="assignee" [style.background-color]="getAssigneeColor(task.assignee)">
+                {{ task.assignee }}
+              </div>
+              <span class="task-date">📅 {{ task.date | date:'MMM d, y' }}</span>
+              <span class="task-status-label">{{ task.status }}</span>
+              <div class="task-meta">
+                <span>❤️ {{ task.likes }}</span>
+                <span>💬 {{ task.comments }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="getBacklogWeekGroups().length === 0" class="empty-state">
+        <svg width="80" height="80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+        </svg>
+        <h3>No tasks found</h3>
+        <p>Try adjusting your filters or add a new task</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============= MODALS ============= -->
+
+  <!-- Add Task Modal -->
+  <div class="modal-overlay" *ngIf="showAddTaskModal" (click)="closeAddTaskModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h2>Add New Task</h2>
+      
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" [(ngModel)]="newTask.title" placeholder="Enter task title">
+      </div>
+
+      <div class="form-group">
+        <label>Description</label>
+        <textarea [(ngModel)]="newTask.description" placeholder="Enter task description"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Assignee</label>
+        <input type="text" [(ngModel)]="newTask.assignee" placeholder="Enter assignee name">
+      </div>
+
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" [(ngModel)]="newTask.date">
+      </div>
+
+      <div class="form-group">
+        <label style="display: flex; align-items: center; gap: 0.5rem;">
+          <input type="checkbox" [(ngModel)]="newTask.completed" style="width: auto;">
+          Mark as Completed
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" (click)="closeAddTaskModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="addTask()">Add Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task Details Modal -->
+  <div class="modal-overlay" *ngIf="showTaskDetailsModal" (click)="closeTaskDetails()">
+    <div class="modal modal-large" (click)="$event.stopPropagation()">
+      <div class="task-detail-header">
+        <h2>{{ selectedTask?.title }}</h2>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-primary" (click)="openEditTaskModal(selectedTask!)">Edit</button>
+          <button class="btn btn-danger" (click)="deleteTask()">Delete</button>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Description</label>
+        <p>{{ selectedTask?.description }}</p>
+      </div>
+
+      <div class="form-group">
+        <label>Assignee</label>
+        <div class="assignee" [style.background-color]="getAssigneeColor(selectedTask?.assignee || '')">
+          {{ selectedTask?.assignee }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Status</label>
+        <p>{{ selectedTask?.status }}</p>
+      </div>
+
+      <div class="form-group">
+        <label>Date</label>
+        <p>{{ selectedTask?.date }}</p>
+      </div>
+
+      <div class="form-group">
+        <label>Completed</label>
+        <p>{{ selectedTask?.completed ? '✓ Yes' : '○ No' }}</p>
+      </div>
+
+      <div class="task-meta">
+        <span>❤️ {{ selectedTask?.likes }}</span>
+        <span>💬 {{ selectedTask?.comments }}</span>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" (click)="closeTaskDetails()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Task Modal -->
+  <div class="modal-overlay" *ngIf="showEditTaskModal" (click)="closeEditTaskModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h2>Edit Task</h2>
+      
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" [(ngModel)]="editTask.title" placeholder="Enter task title">
+      </div>
+
+      <div class="form-group">
+        <label>Description</label>
+        <textarea [(ngModel)]="editTask.description" placeholder="Enter task description"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Assignee</label>
+        <input type="text" [(ngModel)]="editTask.assignee" placeholder="Enter assignee initial" maxlength="1">
+      </div>
+
+      <div class="form-group">
+        <label>Status</label>
+        <select [(ngModel)]="editTask.status">
+          <option value="backlog">Backlog</option>
+          <option value="inProgress">In Progress</option>
+          <option value="review">Review</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" [(ngModel)]="editTask.date">
+      </div>
+
+      <div class="form-group">
+        <label style="display: flex; align-items: center; gap: 0.5rem;">
+          <input type="checkbox" [(ngModel)]="editTask.completed" style="width: auto;">
+          Mark as Completed
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" (click)="closeEditTaskModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="updateTask()">Update Task</button>
+      </div>
+    </div>
+  </div>
+</div>
