@@ -1,384 +1,435 @@
-<div class="kanban-board">
-  <!-- Header -->
-  <div class="board-header">
-    <h1>Kanban Board</h1>
+<div class="flex h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+  <!-- Sidebar -->
+  <div class="w-56 bg-white border-r border-gray-200 flex flex-col shadow-sm">
+    <div class="p-4 border-b border-gray-200">
+      <h1 class="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+        Beyond Gravity
+      </h1>
+      <p class="text-xs text-gray-500 mt-0.5">Software project</p>
+    </div>
     
-    <!-- Page Navigation -->
-    <div class="header-actions">
-      <button
-        (click)="setCurrentPage(1)"
-        [class]="currentPage === 1 ? 'btn btn-primary' : 'btn btn-secondary'"
-      >
-        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-        </svg>
-        This Week
-      </button>
-      <button
-        (click)="setCurrentPage(2)"
-        [class]="currentPage === 2 ? 'btn btn-primary' : 'btn btn-secondary'"
-      >
-        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-        </svg>
-        All Tasks
-      </button>
-      <button
-        (click)="setCurrentPage(3)"
-        [class]="currentPage === 3 ? 'btn btn-primary' : 'btn btn-secondary'"
-      >
-        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-        Backlog
-      </button>
-      
-      <!-- Action Buttons - Only on Page 2 -->
-      <ng-container *ngIf="currentPage === 2">
-        <button class="btn btn-primary" (click)="openAddTaskModal()">
-          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+    <div class="flex-1 overflow-y-auto py-3">
+      <div class="px-3 mb-4">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Planning</p>
+        <nav class="space-y-1">
+          <button 
+            (click)="setActiveView('timeline')"
+            [class.bg-blue-50]="activeView === 'timeline'"
+            [class.text-blue-700]="activeView === 'timeline'"
+            [class.font-medium]="activeView === 'timeline'"
+            class="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-gray-700 hover:bg-gray-50">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            Timeline
+          </button>
+          <button 
+            (click)="setActiveView('backlog')"
+            [class.bg-blue-50]="activeView === 'backlog'"
+            [class.text-blue-700]="activeView === 'backlog'"
+            [class.font-medium]="activeView === 'backlog'"
+            class="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-gray-700 hover:bg-gray-50">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+              <path d="M2 17l10 5 10-5"></path>
+              <path d="M2 12l10 5 10-5"></path>
+            </svg>
+            Backlog
+          </button>
+          <button 
+            (click)="setActiveView('board')"
+            [class.bg-blue-50]="activeView === 'board'"
+            [class.text-blue-700]="activeView === 'board'"
+            [class.font-medium]="activeView === 'board'"
+            class="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-gray-700 hover:bg-gray-50">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+            Board
+          </button>
+          <button class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            Reports
+          </button>
+        </nav>
+      </div>
+
+      <div class="px-3 mb-4">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Team</p>
+        <button class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
           </svg>
-          Add Task
+          Team Members
         </button>
-        <button class="btn btn-success" (click)="generateWithAI()">
-          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-          </svg>
-          Generate with AI
-        </button>
-      </ng-container>
+      </div>
+    </div>
+
+    <div class="p-3 border-t border-gray-200">
+      <button class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m-2 2l-4.2 4.2M23 12h-6m-6 0H1m18.2 5.2l-4.2-4.2m-2-2l-4.2-4.2"></path>
+        </svg>
+        Project Settings
+      </button>
     </div>
   </div>
 
-  <!-- ============= KANBAN BOARD VIEW (Page 1 & 2) ============= -->
-  <div *ngIf="currentPage !== 3" class="board-columns">
-    <div *ngFor="let column of columns" class="column">
-      <!-- Column Header -->
-      <div [class]="column.headerClass">
-        <h3>{{ column.title }}</h3>
-        <span class="task-count">{{ getColumnCount(column.id) }}</span>
-      </div>
-
-      <!-- Task Cards -->
-      <div class="column-content">
-        <div
-          *ngFor="let task of getColumnTasks(column.id)"
-          class="task-card"
-          (click)="openTaskDetails(task)"
-        >
-          <div class="task-header">
-            <h4>{{ task.title }}</h4>
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <h2 class="text-xl font-semibold text-gray-900">
+            {{ activeView === 'board' ? 'Board' : activeView === 'backlog' ? 'Backlog' : 'Timeline' }}
+          </h2>
+          <div *ngIf="activeView === 'board'" class="flex items-center gap-2">
+            <select 
+              [(ngModel)]="selectedSprint"
+              class="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option *ngFor="let sprint of sprints" [value]="sprint">{{ sprint }}</option>
+            </select>
           </div>
-          <p class="task-description">{{ task.description }}</p>
-          
-          <div class="task-footer">
-            <!-- Assignee Avatar -->
-            <div class="assignee" [style.background-color]="getAssigneeColor(task.assignee)">
-              {{ task.assignee }}
-            </div>
-            
-            <!-- Task Meta -->
-            <div class="task-meta">
-              <span>❤️ {{ task.likes }}</span>
-              <span>💬 {{ task.comments }}</span>
-            </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input 
+              type="text"
+              placeholder="Search tasks..."
+              class="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"/>
           </div>
+          <button 
+            (click)="openAddTaskModal()"
+            class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-sm font-medium hover:opacity-90 shadow-sm flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Task
+          </button>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- ============= BACKLOG PAGE (Page 3) ============= -->
-  <div *ngIf="currentPage === 3" class="backlog-container">
-    <!-- Backlog Header with Filters -->
-    <div class="backlog-header">
-      <div class="backlog-filters">
-        <!-- Search -->
-        <div class="filter-group">
-          <input 
-            type="text" 
-            [(ngModel)]="backlogSearchQuery" 
-            placeholder="🔍 Search tasks..."
-            class="search-input"
-          />
-        </div>
-
-        <!-- Week Filter -->
-        <div class="filter-group">
-          <select [(ngModel)]="backlogFilterWeek" class="filter-select">
-            <option value="">All Weeks</option>
-            <option *ngFor="let week of getAvailableWeeks()" [value]="week">
-              Week {{ week }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Status Filter -->
-        <div class="filter-group">
-          <select [(ngModel)]="backlogFilterStatus" class="filter-select">
-            <option value="">All Status</option>
-            <option value="completed">Completed</option>
-            <option value="pending">Pending</option>
-          </select>
-        </div>
-
-        <!-- Assignee Filter -->
-        <div class="filter-group">
-          <select [(ngModel)]="backlogFilterAssignee" class="filter-select">
-            <option value="">All Assignees</option>
-            <option *ngFor="let assignee of getUniqueAssignees()" [value]="assignee">
-              {{ assignee | uppercase }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Sort Order -->
-        <div class="filter-group">
-          <select [(ngModel)]="backlogSortOrder" class="filter-select">
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-          </select>
-        </div>
-
-        <!-- Clear Filters -->
-        <button class="btn btn-secondary" (click)="clearBacklogFilters()">
-          Clear Filters
-        </button>
-      </div>
-
-      <!-- Export Options -->
-      <div class="backlog-actions">
-        <button class="btn btn-primary" (click)="openAddTaskModal()">
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-          </svg>
-          Add Task
-        </button>
-        <button class="btn btn-success" (click)="exportBacklogCSV()">
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
-          Export CSV
-        </button>
-        <button class="btn btn-danger" (click)="exportBacklogPDF()">
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-          </svg>
-          Export PDF
-        </button>
-      </div>
-    </div>
-
-    <!-- Week Groups -->
-    <div class="backlog-weeks">
-      <div *ngFor="let week of getBacklogWeekGroups()" class="week-group">
-        <!-- Week Header -->
-        <div class="week-header" (click)="toggleWeekExpansion(week)">
-          <div class="week-info">
-            <span class="week-toggle">
-              {{ week.expanded ? '▼' : '▶' }}
-            </span>
-            <h3>{{ week.weekLabel }}</h3>
-            <span class="week-date-range">
-              {{ week.startDate | date:'MMM d' }} - {{ week.endDate | date:'MMM d, y' }}
-            </span>
-            <span class="week-task-count">{{ week.tasks.length }} tasks</span>
+    <!-- Backlog View -->
+    <div *ngIf="activeView === 'backlog'" class="p-6 overflow-y-auto flex-1">
+      <div class="max-w-5xl">
+        <div class="space-y-2">
+          <div *ngIf="tasks.backlog.length === 0" class="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-12 text-center border-2 border-dashed border-red-200">
+            <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">No tasks in backlog</h3>
+            <p class="text-gray-500 text-sm mb-4">Create your first task to get started with your project</p>
+            <button 
+              (click)="openAddTaskModal()"
+              class="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-sm font-medium hover:opacity-90 inline-flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Add Your First Task
+            </button>
           </div>
           
-          <!-- Progress Bar -->
-          <div class="week-progress">
-            <div class="progress-bar">
-              <div 
-                class="progress-fill" 
-                [style.width.%]="week.completionRate"
-              ></div>
+          <div *ngFor="let task of tasks.backlog" class="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all hover:border-blue-300">
+            <div class="flex items-start gap-4">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-2">
+                  <h4 class="text-sm font-semibold text-gray-900">{{ task.title }}</h4>
+                </div>
+                <p class="text-xs text-gray-600 mb-3">{{ task.desc }}</p>
+                <div class="flex items-center gap-3">
+                  <span [class]="'text-xs px-2.5 py-1 rounded-full font-medium ' + getLabelColor(task.label)">
+                    {{ task.label }}
+                  </span>
+                  <span class="text-xs text-gray-500">{{ task.points }} pts</span>
+                  <div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-medium">
+                    {{ task.assignee }}
+                  </div>
+                </div>
+              </div>
+              <select
+                (change)="moveTask(task.id, $any($event.target).value)"
+                class="text-xs bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 border-none">
+                <option value="backlog" selected>Backlog</option>
+                <option value="todo">To Do</option>
+                <option value="inProgress">In Progress</option>
+                <option value="review">Review</option>
+                <option value="done">Done</option>
+              </select>
             </div>
-            <span class="progress-text">{{ week.completionRate | number:'1.0-0' }}% Complete</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Board View - Image 1 Design (4 Columns Only) -->
+    <div *ngIf="activeView === 'board'" class="flex-1 overflow-x-auto overflow-y-hidden p-6">
+      <div class="flex gap-4 h-full">
+        <!-- Backlog Column (Pink/Red) -->
+        <div class="w-80 flex-shrink-0 flex flex-col">
+          <div class="bg-gradient-to-br from-red-50 to-pink-50 rounded-xl p-4 mb-3 border border-red-200 shadow-sm">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-gray-900">Backlog</h3>
+              <span class="text-sm bg-red-500 text-white px-3 py-1 rounded-full font-bold">
+                {{ tasks.backlog.length }}
+              </span>
+            </div>
+          </div>
+          <div class="space-y-3 overflow-y-auto flex-1 pr-2">
+            <div *ngFor="let task of tasks.backlog" class="bg-white rounded-xl p-4 shadow hover:shadow-lg transition-all border border-gray-100">
+              <div class="flex items-start justify-between mb-3">
+                <h4 class="text-sm font-semibold text-gray-900 flex-1 leading-snug">{{ task.title }}</h4>
+                <button class="text-gray-400 hover:text-gray-700 flex-shrink-0 ml-2">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <circle cx="10" cy="10" r="1.5"></circle>
+                    <circle cx="10" cy="5" r="1.5"></circle>
+                    <circle cx="10" cy="15" r="1.5"></circle>
+                  </svg>
+                </button>
+              </div>
+              <p class="text-xs text-gray-600 mb-4 leading-relaxed">{{ task.desc }}</p>
+              <div class="flex items-center justify-between">
+                <span [class]="'text-xs px-3 py-1.5 rounded-full font-semibold ' + getLabelColor(task.label)">
+                  {{ task.label }}
+                </span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-gray-500 font-medium">{{ task.points }} pts</span>
+                  <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                    {{ task.assignee }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button 
+              (click)="openAddTaskModal()"
+              class="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors font-medium">
+              + Add Task
+            </button>
           </div>
         </div>
 
-        <!-- Week Tasks (Collapsible) -->
-        <div *ngIf="week.expanded" class="week-tasks">
-          <div 
-            *ngFor="let task of week.tasks" 
-            class="backlog-task-card"
-            [class.completed]="task.completed"
-            (click)="openTaskDetails(task)"
-          >
-            <div class="task-main">
-              <div class="task-status">
-                <span *ngIf="task.completed" class="status-badge completed">✓ Completed</span>
-                <span *ngIf="!task.completed" class="status-badge pending">○ Pending</span>
+        <!-- In Progress Column (Blue) -->
+        <div class="w-80 flex-shrink-0 flex flex-col">
+          <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 mb-3 border border-blue-200 shadow-sm">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-gray-900">In Progress</h3>
+              <span class="text-sm bg-blue-500 text-white px-3 py-1 rounded-full font-bold">
+                {{ tasks.inProgress.length }}
+              </span>
+            </div>
+          </div>
+          <div class="space-y-3 overflow-y-auto flex-1 pr-2">
+            <div *ngFor="let task of tasks.inProgress" class="bg-white rounded-xl p-4 shadow hover:shadow-lg transition-all border border-gray-100">
+              <div class="flex items-start justify-between mb-3">
+                <h4 class="text-sm font-semibold text-gray-900 flex-1 leading-snug">{{ task.title }}</h4>
+                <button class="text-gray-400 hover:text-gray-700 flex-shrink-0 ml-2">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <circle cx="10" cy="10" r="1.5"></circle>
+                    <circle cx="10" cy="5" r="1.5"></circle>
+                    <circle cx="10" cy="15" r="1.5"></circle>
+                  </svg>
+                </button>
               </div>
-              
-              <div class="task-info">
-                <h4>{{ task.title }}</h4>
-                <p>{{ task.description }}</p>
+              <p class="text-xs text-gray-600 mb-4 leading-relaxed">{{ task.desc }}</p>
+              <div class="flex items-center justify-between">
+                <span [class]="'text-xs px-3 py-1.5 rounded-full font-semibold ' + getLabelColor(task.label)">
+                  {{ task.label }}
+                </span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-gray-500 font-medium">{{ task.points }} pts</span>
+                  <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                    {{ task.assignee }}
+                  </div>
+                </div>
               </div>
             </div>
+            <button 
+              (click)="openAddTaskModal()"
+              class="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors font-medium">
+              + Add Task
+            </button>
+          </div>
+        </div>
 
-            <div class="task-details">
-              <div class="assignee" [style.background-color]="getAssigneeColor(task.assignee)">
-                {{ task.assignee }}
+        <!-- Review Column (Yellow) -->
+        <div class="w-80 flex-shrink-0 flex flex-col">
+          <div class="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl p-4 mb-3 border border-yellow-200 shadow-sm">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-gray-900">Review</h3>
+              <span class="text-sm bg-yellow-500 text-white px-3 py-1 rounded-full font-bold">
+                {{ tasks.review.length }}
+              </span>
+            </div>
+          </div>
+          <div class="space-y-3 overflow-y-auto flex-1 pr-2">
+            <div *ngFor="let task of tasks.review" class="bg-white rounded-xl p-4 shadow hover:shadow-lg transition-all border border-gray-100">
+              <div class="flex items-start justify-between mb-3">
+                <h4 class="text-sm font-semibold text-gray-900 flex-1 leading-snug">{{ task.title }}</h4>
+                <button class="text-gray-400 hover:text-gray-700 flex-shrink-0 ml-2">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <circle cx="10" cy="10" r="1.5"></circle>
+                    <circle cx="10" cy="5" r="1.5"></circle>
+                    <circle cx="10" cy="15" r="1.5"></circle>
+                  </svg>
+                </button>
               </div>
-              <span class="task-date">📅 {{ task.date | date:'MMM d, y' }}</span>
-              <span class="task-status-label">{{ task.status }}</span>
-              <div class="task-meta">
-                <span>❤️ {{ task.likes }}</span>
-                <span>💬 {{ task.comments }}</span>
+              <p class="text-xs text-gray-600 mb-4 leading-relaxed">{{ task.desc }}</p>
+              <div class="flex items-center justify-between">
+                <span [class]="'text-xs px-3 py-1.5 rounded-full font-semibold ' + getLabelColor(task.label)">
+                  {{ task.label }}
+                </span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-gray-500 font-medium">{{ task.points }} pts</span>
+                  <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                    {{ task.assignee }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button 
+              (click)="openAddTaskModal()"
+              class="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors font-medium">
+              + Add Task
+            </button>
+          </div>
+        </div>
+
+        <!-- Done Column (Green) -->
+        <div class="w-80 flex-shrink-0 flex flex-col">
+          <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 mb-3 border border-green-200 shadow-sm">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-gray-900">Done</h3>
+              <span class="text-sm bg-green-500 text-white px-3 py-1 rounded-full font-bold">
+                {{ tasks.done.length }}
+              </span>
+            </div>
+          </div>
+          <div class="space-y-3 overflow-y-auto flex-1 pr-2">
+            <div *ngFor="let task of tasks.done" class="bg-white rounded-xl p-4 shadow hover:shadow-lg transition-all border border-gray-100">
+              <div class="flex items-start justify-between mb-3">
+                <h4 class="text-sm font-semibold text-gray-900 flex-1 leading-snug">{{ task.title }}</h4>
+                <button class="text-gray-400 hover:text-gray-700 flex-shrink-0 ml-2">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <circle cx="10" cy="10" r="1.5"></circle>
+                    <circle cx="10" cy="5" r="1.5"></circle>
+                    <circle cx="10" cy="15" r="1.5"></circle>
+                  </svg>
+                </button>
+              </div>
+              <p class="text-xs text-gray-600 mb-4 leading-relaxed">{{ task.desc }}</p>
+              <div class="flex items-center justify-between">
+                <span [class]="'text-xs px-3 py-1.5 rounded-full font-semibold ' + getLabelColor(task.label)">
+                  {{ task.label }}
+                </span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-gray-500 font-medium">{{ task.points }} pts</span>
+                  <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                    {{ task.assignee }}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Empty State -->
-      <div *ngIf="getBacklogWeekGroups().length === 0" class="empty-state">
-        <svg width="80" height="80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+    <!-- Timeline View (Placeholder) -->
+    <div *ngIf="activeView === 'timeline'" class="p-6 overflow-y-auto flex-1">
+      <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-12 text-center border-2 border-dashed border-blue-200">
+        <svg class="w-20 h-20 mx-auto text-blue-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
         </svg>
-        <h3>No tasks found</h3>
-        <p>Try adjusting your filters or add a new task</p>
+        <h3 class="text-xl font-bold text-gray-700 mb-2">Timeline View</h3>
+        <p class="text-gray-600">Coming soon! Plan your sprints and track project progress over time.</p>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- ============= MODALS ============= -->
-
-  <!-- Add Task Modal -->
-  <div class="modal-overlay" *ngIf="showAddTaskModal" (click)="closeAddTaskModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <h2>Add New Task</h2>
+<!-- Add Task Modal -->
+<div *ngIf="showAddTask" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl transform transition-all">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="text-xl font-bold text-gray-900">Add New Task</h3>
+      <button 
+        (click)="closeAddTaskModal()" 
+        class="text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg p-1.5 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Task Title *</label>
+        <input
+          type="text"
+          [(ngModel)]="newTaskTitle"
+          placeholder="e.g., Create user authentication flow"
+          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"/>
+      </div>
       
-      <div class="form-group">
-        <label>Title</label>
-        <input type="text" [(ngModel)]="newTask.title" placeholder="Enter task title">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+        <textarea
+          [(ngModel)]="newTaskDesc"
+          placeholder="Add task details, requirements, or notes..."
+          rows="3"
+          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"></textarea>
       </div>
-
-      <div class="form-group">
-        <label>Description</label>
-        <textarea [(ngModel)]="newTask.description" placeholder="Enter task description"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Assignee</label>
-        <input type="text" [(ngModel)]="newTask.assignee" placeholder="Enter assignee name">
-      </div>
-
-      <div class="form-group">
-        <label>Date</label>
-        <input type="date" [(ngModel)]="newTask.date">
-      </div>
-
-      <div class="form-group">
-        <label style="display: flex; align-items: center; gap: 0.5rem;">
-          <input type="checkbox" [(ngModel)]="newTask.completed" style="width: auto;">
-          Mark as Completed
-        </label>
-      </div>
-
-      <div class="modal-actions">
-        <button class="btn btn-secondary" (click)="closeAddTaskModal()">Cancel</button>
-        <button class="btn btn-primary" (click)="addTask()">Add Task</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Task Details Modal -->
-  <div class="modal-overlay" *ngIf="showTaskDetailsModal" (click)="closeTaskDetails()">
-    <div class="modal modal-large" (click)="$event.stopPropagation()">
-      <div class="task-detail-header">
-        <h2>{{ selectedTask?.title }}</h2>
-        <div style="display: flex; gap: 0.5rem;">
-          <button class="btn btn-primary" (click)="openEditTaskModal(selectedTask!)">Edit</button>
-          <button class="btn btn-danger" (click)="deleteTask()">Delete</button>
+      
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3.5">
+        <div class="flex gap-2">
+          <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <p class="text-xs text-blue-800 leading-relaxed">
+            New tasks will be added to <strong>Backlog</strong>. You can move them to other columns using the dropdown menu on each task card.
+          </p>
         </div>
       </div>
       
-      <div class="form-group">
-        <label>Description</label>
-        <p>{{ selectedTask?.description }}</p>
-      </div>
-
-      <div class="form-group">
-        <label>Assignee</label>
-        <div class="assignee" [style.background-color]="getAssigneeColor(selectedTask?.assignee || '')">
-          {{ selectedTask?.assignee }}
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Status</label>
-        <p>{{ selectedTask?.status }}</p>
-      </div>
-
-      <div class="form-group">
-        <label>Date</label>
-        <p>{{ selectedTask?.date }}</p>
-      </div>
-
-      <div class="form-group">
-        <label>Completed</label>
-        <p>{{ selectedTask?.completed ? '✓ Yes' : '○ No' }}</p>
-      </div>
-
-      <div class="task-meta">
-        <span>❤️ {{ selectedTask?.likes }}</span>
-        <span>💬 {{ selectedTask?.comments }}</span>
-      </div>
-
-      <div class="modal-actions">
-        <button class="btn btn-secondary" (click)="closeTaskDetails()">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Edit Task Modal -->
-  <div class="modal-overlay" *ngIf="showEditTaskModal" (click)="closeEditTaskModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <h2>Edit Task</h2>
-      
-      <div class="form-group">
-        <label>Title</label>
-        <input type="text" [(ngModel)]="editTask.title" placeholder="Enter task title">
-      </div>
-
-      <div class="form-group">
-        <label>Description</label>
-        <textarea [(ngModel)]="editTask.description" placeholder="Enter task description"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Assignee</label>
-        <input type="text" [(ngModel)]="editTask.assignee" placeholder="Enter assignee initial" maxlength="1">
-      </div>
-
-      <div class="form-group">
-        <label>Status</label>
-        <select [(ngModel)]="editTask.status">
-          <option value="backlog">Backlog</option>
-          <option value="inProgress">In Progress</option>
-          <option value="review">Review</option>
-          <option value="done">Done</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Date</label>
-        <input type="date" [(ngModel)]="editTask.date">
-      </div>
-
-      <div class="form-group">
-        <label style="display: flex; align-items: center; gap: 0.5rem;">
-          <input type="checkbox" [(ngModel)]="editTask.completed" style="width: auto;">
-          Mark as Completed
-        </label>
-      </div>
-
-      <div class="modal-actions">
-        <button class="btn btn-secondary" (click)="closeEditTaskModal()">Cancel</button>
-        <button class="btn btn-primary" (click)="updateTask()">Update Task</button>
+      <div class="flex gap-3 pt-2">
+        <button
+          (click)="closeAddTaskModal()"
+          class="flex-1 px-4 py-2.5 border-2 border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+          Cancel
+        </button>
+        <button
+          (click)="addNewTask()"
+          [disabled]="!newTaskTitle.trim()"
+          [class.opacity-50]="!newTaskTitle.trim()"
+          [class.cursor-not-allowed]="!newTaskTitle.trim()"
+          class="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity shadow-md">
+          Add Task
+        </button>
       </div>
     </div>
   </div>
