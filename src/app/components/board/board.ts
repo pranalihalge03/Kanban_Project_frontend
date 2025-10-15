@@ -11,6 +11,7 @@ interface Task {
   label: 'BILLING' | 'ACCOUNTS' | 'FORMS' | 'FEEDBACK';
   points: number;
   status: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done';
+  sprint?: string;
 }
 
 @Component({
@@ -18,17 +19,21 @@ interface Task {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './board.html',
-  styleUrls: ['./board.scss']  // ✅ Make sure path is correct
+  styleUrls: ['./board.scss']
 })
 export class BoardComponent {
-  activeView: 'board' | 'backlog' | 'timeline' = 'board';
+  activeView: 'board' | 'backlog' | 'timeline' | 'reports' | 'team' = 'board';
   selectedSprint = 'Sprint 3';
   showAddTask = false;
   newTaskTitle = '';
   newTaskDesc = '';
+  searchTerm = '';
+  draggedTask: Task | null = null;
+  newTaskStatus: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done' = 'backlog';
 
-  sprints = ['Sprint 3', 'Sprint 4', 'All Sprints'];
+  sprints = ['Sprint 3', 'Sprint 4', 'Sprint 5', 'All Sprints'];
 
+  // ⚠️ Empty tasks - तुम्ही स्वतः tasks add करू शकता
   tasks: {
     backlog: Task[];
     todo: Task[];
@@ -36,27 +41,44 @@ export class BoardComponent {
     review: Task[];
     done: Task[];
   } = {
-    backlog: [
-      { id: 1, title: 'Optimize experience for mobile web', desc: 'Improve mobile responsiveness', priority: 'High', assignee: 'SR', label: 'BILLING', points: 2, status: 'backlog' },
-      { id: 2, title: 'Onboard workout options (OWO)', desc: 'Setup workout tracking', priority: 'Medium', assignee: 'MJ', label: 'ACCOUNTS', points: 1, status: 'backlog' },
-      { id: 3, title: 'Billing system integration', desc: 'Connect billing API', priority: 'Low', assignee: 'SP', label: 'FORMS', points: 3, status: 'backlog' },
-      { id: 4, title: 'Quick payment feature', desc: 'Add payment gateway', priority: 'Medium', assignee: 'PH', label: 'FEEDBACK', points: 3, status: 'backlog' }
-    ],
-    todo: [
-      { id: 5, title: 'Fast trip search optimization', desc: 'Search algorithm improvements', priority: 'High', assignee: 'SR', label: 'ACCOUNTS', points: 4, status: 'todo' },
-      { id: 6, title: 'Affiliate links integration', desc: 'Frontend integration work', priority: 'Medium', assignee: 'MJ', label: 'BILLING', points: 2, status: 'todo' }
-    ],
-    inProgress: [
-      { id: 7, title: 'Revise and streamline booking', desc: 'UI/UX improvements', priority: 'High', assignee: 'SP', label: 'ACCOUNTS', points: 2, status: 'inProgress' }
-    ],
-    review: [
-      { id: 8, title: 'Color palette corrections', desc: 'Fix yellow shade issues', priority: 'Low', assignee: 'PH', label: 'FEEDBACK', points: 1, status: 'review' }
-    ],
-    done: [
-      { id: 9, title: 'BugFix: Web-store app crash', desc: 'Critical bug resolved', priority: 'Critical', assignee: 'SR', label: 'FORMS', points: 5, status: 'done' },
-      { id: 10, title: 'Software bug fix for app', desc: 'Performance improvements', priority: 'Medium', assignee: 'MJ', label: 'FEEDBACK', points: 3, status: 'done' }
-    ]
+    backlog: [],
+    todo: [],
+    inProgress: [],
+    review: [],
+    done: []
   };
+
+  constructor() {
+    // Load tasks from localStorage on component init
+    this.loadTasksFromStorage();
+  }
+
+  // ========================================
+  // LOCAL STORAGE METHODS
+  // ========================================
+
+  private loadTasksFromStorage(): void {
+    const savedTasks = localStorage.getItem('kanban-tasks');
+    if (savedTasks) {
+      try {
+        this.tasks = JSON.parse(savedTasks);
+      } catch (e) {
+        console.error('Error loading tasks from storage:', e);
+      }
+    }
+  }
+
+  private saveTasksToStorage(): void {
+    try {
+      localStorage.setItem('kanban-tasks', JSON.stringify(this.tasks));
+    } catch (e) {
+      console.error('Error saving tasks to storage:', e);
+    }
+  }
+
+  // ========================================
+  // HELPER METHODS
+  // ========================================
 
   getLabelColor(label: string): string {
     const colors: { [key: string]: string } = {
@@ -78,11 +100,14 @@ export class BoardComponent {
     return colors[priority] || 'text-gray-500';
   }
 
-  setActiveView(view: 'board' | 'backlog' | 'timeline'): void {
+  setActiveView(view: 'board' | 'backlog' | 'timeline' | 'reports' | 'team'): void {
     this.activeView = view;
   }
 
-  // FIXED: Dropdown change handler - properly moves tasks between columns
+  // ========================================
+  // TASK MOVEMENT
+  // ========================================
+
   moveTask(taskId: number, newStatus: string): void {
     const allStatuses: Array<'backlog' | 'todo' | 'inProgress' | 'review' | 'done'> = 
       ['backlog', 'todo', 'inProgress', 'review', 'done'];
@@ -107,10 +132,92 @@ export class BoardComponent {
       // Add to new status
       task.status = newStatus as any;
       this.tasks[newStatus as keyof typeof this.tasks].push(task);
+      this.saveTasksToStorage(); 
     }
   }
 
-  // FIXED: Add Task functionality - properly shows modal and adds task
+  // ========================================
+  // DRAG & DROP FUNCTIONALITY
+  // ========================================
+
+  onDragStart(event: DragEvent, task: Task): void {
+    this.draggedTask = task;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/html', '');
+    }
+  }
+
+  onDragEnd(event: DragEvent): void {
+    this.draggedTask = null;
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+  }
+
+  onDrop(event: DragEvent, newStatus: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done'): void {
+    event.preventDefault();
+    
+    if (this.draggedTask && this.draggedTask.status !== newStatus) {
+      this.moveTask(this.draggedTask.id, newStatus);
+    }
+  }
+
+  // ========================================
+  // SEARCH & FILTER
+  // ========================================
+
+  getFilteredTasks(status: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done'): Task[] {
+    let filtered = this.tasks[status];
+
+    // Filter by search term
+    if (this.searchTerm.trim()) {
+      const search = this.searchTerm.toLowerCase();
+      filtered = filtered.filter(task => 
+        task.title.toLowerCase().includes(search) || 
+        task.desc.toLowerCase().includes(search)
+      );
+    }
+
+    // Filter by sprint (if not "All Sprints")
+    if (this.selectedSprint !== 'All Sprints') {
+      filtered = filtered.filter(task => task.sprint === this.selectedSprint);
+    }
+
+    return filtered;
+  }
+
+  getAllBacklogTasks(): Task[] {
+    let allTasks = [...this.tasks.backlog];
+
+    // Filter by sprint
+    if (this.selectedSprint !== 'All Sprints') {
+      allTasks = allTasks.filter(task => task.sprint === this.selectedSprint);
+    }
+
+    return allTasks;
+  }
+
+  // ========================================
+  // ADD TASK MODAL
+  // ========================================
+
+  openAddTaskModal(status?: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done'): void {
+    this.showAddTask = true;
+    this.newTaskStatus = status || 'backlog';
+  }
+
+  closeAddTaskModal(): void {
+    this.showAddTask = false;
+    this.newTaskTitle = '';
+    this.newTaskDesc = '';
+    this.newTaskStatus = 'backlog';
+  }
+
   addNewTask(): void {
     if (this.newTaskTitle.trim()) {
       const newTask: Task = {
@@ -121,25 +228,45 @@ export class BoardComponent {
         assignee: 'SR',
         label: 'ACCOUNTS',
         points: 2,
-        status: 'backlog'
+        status: this.newTaskStatus,
+        sprint: this.selectedSprint !== 'All Sprints' ? this.selectedSprint : 'Sprint 3'
       };
       
-      this.tasks.backlog.push(newTask);
+      this.tasks[this.newTaskStatus].push(newTask);
+       this.saveTasksToStorage();
       this.closeAddTaskModal();
-      
-      // Switch to backlog view to show new task
-      this.activeView = 'backlog';
+    }
+    
+  }
+  deleteTask(taskId: number, status: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done'): void {
+    if (confirm('Are you sure you want to delete this task?')) {
+      this.tasks[status] = this.tasks[status].filter(t => t.id !== taskId);
+      this.saveTasksToStorage();
     }
   }
 
-  closeAddTaskModal(): void {
-    this.showAddTask = false;
-    this.newTaskTitle = '';
-    this.newTaskDesc = '';
-  }
+  // ========================================
+  // SPRINT FUNCTIONALITY
+  // ========================================
 
-  // FIXED: Open modal properly
-  openAddTaskModal(): void {
-    this.showAddTask = true;
+  startSprint(): void {
+    const backlogTasks = this.getAllBacklogTasks();
+    
+    if (backlogTasks.length === 0) {
+      alert('No tasks in backlog for this sprint!');
+      return;
+    }
+
+    // Backlog मधील सर्व tasks TO DO मध्ये move करतो
+    backlogTasks.forEach(task => {
+      this.moveTask(task.id, 'todo');
+    });
+
+    alert(`✅ ${this.selectedSprint} started! ${backlogTasks.length} tasks moved to TO DO.`);
+
+    this.saveTasksToStorage();
+    
+    // Board view वर जा
+    this.activeView = 'board';
   }
 }
