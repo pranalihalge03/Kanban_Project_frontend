@@ -5,6 +5,12 @@ import { BoardComponent } from './components/board/board';
   selector: 'app-root',
   standalone: true,
   imports: [BoardComponent],
-  template: `<app-board></app-board>`
+  template: `<app-board></app-board>`,
+  styleUrls: ['./app.scss']
 })
-export class AppComponent {}
+// app.component.ts
+export class AppComponent {
+  title() {
+    return 'Angular User';
+  }
+}

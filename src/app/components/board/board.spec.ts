@@ -1,18 +1,15 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
-import { Board } from './board';
-
-describe('Board', () => {
-  let component: Board;
-  let fixture: ComponentFixture<Board>;
+import { BoardComponent } from './board';  // ✅ Correct
+describe('BoardComponent', () => {
+  let component: BoardComponent;
+  let fixture: ComponentFixture<BoardComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Board]
-    })
-    .compileComponents();
+      imports: [BoardComponent]   // ✅ since it's standalone
+    }).compileComponents();
 
-    fixture = TestBed.createComponent(Board);
+    fixture = TestBed.createComponent(BoardComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
