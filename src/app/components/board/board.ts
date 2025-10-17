@@ -13,7 +13,14 @@ interface Task {
   status: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done';
   sprint?: string;
 }
-
+interface TeamMember {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  initials: string;
+  color: string;
+}
 @Component({
   selector: 'app-board',
   standalone: true,
@@ -244,6 +251,177 @@ export class BoardComponent {
       this.saveTasksToStorage();
     }
   }
+  // ========================================
+// REPORTS & ANALYTICS METHODS
+// ========================================
+
+getReportStats() {
+  let allTasks: Task[] = [];
+  
+  // Collect all tasks based on selected sprint
+  if (this.selectedSprint === 'All Sprints') {
+    allTasks = [
+      ...this.tasks.backlog,
+      ...this.tasks.todo,
+      ...this.tasks.inProgress,
+      ...this.tasks.review,
+      ...this.tasks.done
+    ];
+  } else {
+    allTasks = [
+      ...this.tasks.backlog.filter(t => t.sprint === this.selectedSprint),
+      ...this.tasks.todo.filter(t => t.sprint === this.selectedSprint),
+      ...this.tasks.inProgress.filter(t => t.sprint === this.selectedSprint),
+      ...this.tasks.review.filter(t => t.sprint === this.selectedSprint),
+      ...this.tasks.done.filter(t => t.sprint === this.selectedSprint)
+    ];
+  }
+
+  const totalTasks = allTasks.length;
+  const completedTasks = allTasks.filter(t => t.status === 'done').length;
+  const inProgressTasks = allTasks.filter(t => t.status === 'inProgress').length;
+  const totalPoints = allTasks.reduce((sum, task) => sum + task.points, 0);
+  const completedPoints = allTasks.filter(t => t.status === 'done').reduce((sum, task) => sum + task.points, 0);
+  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  return {
+    totalTasks,
+    completedTasks,
+    inProgressTasks,
+    totalPoints,
+    completedPoints,
+    completionRate
+  };
+}
+
+getStatusCount(status: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done'): number {
+  if (this.selectedSprint === 'All Sprints') {
+    return this.tasks[status].length;
+  }
+  return this.tasks[status].filter(t => t.sprint === this.selectedSprint).length;
+}
+
+getStatusPercentage(status: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done'): number {
+  const stats = this.getReportStats();
+  if (stats.totalTasks === 0) return 0;
+  
+  const count = this.getStatusCount(status);
+  return Math.round((count / stats.totalTasks) * 100);
+}
+
+getLabelStats() {
+  let allTasks: Task[] = [];
+  
+  if (this.selectedSprint === 'All Sprints') {
+    allTasks = [
+      ...this.tasks.backlog,
+      ...this.tasks.todo,
+      ...this.tasks.inProgress,
+      ...this.tasks.review,
+      ...this.tasks.done
+    ];
+  } else {
+    allTasks = [
+      ...this.tasks.backlog.filter(t => t.sprint === this.selectedSprint),
+      ...this.tasks.todo.filter(t => t.sprint === this.selectedSprint),
+      ...this.tasks.inProgress.filter(t => t.sprint === this.selectedSprint),
+      ...this.tasks.review.filter(t => t.sprint === this.selectedSprint),
+      ...this.tasks.done.filter(t => t.sprint === this.selectedSprint)
+    ];
+  }
+
+  const labels = ['BILLING', 'ACCOUNTS', 'FORMS', 'FEEDBACK'];
+  const labelStats = labels.map(label => {
+    const count = allTasks.filter(t => t.label === label).length;
+    const percentage = allTasks.length > 0 ? Math.round((count / allTasks.length) * 100) : 0;
+    return { name: label, count, percentage };
+  });
+
+  return labelStats.filter(stat => stat.count > 0);
+}
+
+getPriorityStats() {
+  let allTasks: Task[] = [];
+  
+  if (this.selectedSprint === 'All Sprints') {
+    allTasks = [
+      ...this.tasks.backlog,
+      ...this.tasks.todo,
+      ...this.tasks.inProgress,
+      ...this.tasks.review,
+      ...this.tasks.done
+    ];
+  } else {
+    allTasks = [
+      ...this.tasks.backlog.filter(t => t.sprint === this.selectedSprint),
+      ...this.tasks.todo.filter(t => t.sprint === this.selectedSprint),
+      ...this.tasks.inProgress.filter(t => t.sprint === this.selectedSprint),
+      ...this.tasks.review.filter(t => t.sprint === this.selectedSprint),
+      ...this.tasks.done.filter(t => t.sprint === this.selectedSprint)
+    ];
+  }
+
+  const priorities: Array<'Critical' | 'High' | 'Medium' | 'Low'> = ['Critical', 'High', 'Medium', 'Low'];
+  const priorityStats = priorities.map(priority => {
+    const count = allTasks.filter(t => t.priority === priority).length;
+    const percentage = allTasks.length > 0 ? Math.round((count / allTasks.length) * 100) : 0;
+    return { name: priority, count, percentage };
+  });
+
+  return priorityStats.filter(stat => stat.count > 0);
+}
+
+getPriorityBarColor(priority: string): string {
+  const colors: { [key: string]: string } = {
+    'Critical': 'bg-red-500',
+    'High': 'bg-orange-500',
+    'Medium': 'bg-yellow-500',
+    'Low': 'bg-green-500'
+  };
+  return colors[priority] || 'bg-gray-500';
+}
+
+getTeamStats() {
+  let allTasks: Task[] = [];
+  
+  if (this.selectedSprint === 'All Sprints') {
+    allTasks = [
+      ...this.tasks.backlog,
+      ...this.tasks.todo,
+      ...this.tasks.inProgress,
+      ...this.tasks.review,
+      ...this.tasks.done
+    ];
+  } else {
+    allTasks = [
+      ...this.tasks.backlog.filter(t => t.sprint === this.selectedSprint),
+      ...this.tasks.todo.filter(t => t.sprint === this.selectedSprint),
+      ...this.tasks.inProgress.filter(t => t.sprint === this.selectedSprint),
+      ...this.tasks.review.filter(t => t.sprint === this.selectedSprint),
+      ...this.tasks.done.filter(t => t.sprint === this.selectedSprint)
+    ];
+  }
+
+  const assignees = [...new Set(allTasks.map(t => t.assignee))];
+  
+  return assignees.map(assignee => {
+    const memberTasks = allTasks.filter(t => t.assignee === assignee);
+    const totalTasks = memberTasks.length;
+    const completed = memberTasks.filter(t => t.status === 'done').length;
+    const inProgress = memberTasks.filter(t => t.status === 'inProgress').length;
+    const points = memberTasks.reduce((sum, task) => sum + task.points, 0);
+    const completionRate = totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : 0;
+
+    return {
+      assignee,
+      totalTasks,
+      completed,
+      inProgress,
+      points,
+      completionRate
+    };
+  });
+}
 
   // ========================================
   // SPRINT FUNCTIONALITY
@@ -262,7 +440,7 @@ export class BoardComponent {
       this.moveTask(task.id, 'todo');
     });
 
-    alert(`✅ ${this.selectedSprint} started! ${backlogTasks.length} tasks moved to TO DO.`);
+    alert(`${this.selectedSprint} started!  `);
 
     this.saveTasksToStorage();
     
