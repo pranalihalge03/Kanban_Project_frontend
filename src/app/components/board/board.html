@@ -1,8 +1,4 @@
-<!-- ============================================ -->
-<!-- board.html - Complete Kanban with Backlog  -->
-<!-- ============================================ -->
-
-<div class="flex h-screen bg-gray-50">
+<div class="flex h-screen bg-gray-50 font-sans">
   <!-- Sidebar -->
   <div class="w-64 bg-white border-r border-gray-200 flex flex-col">
     <div class="p-6 border-b border-gray-200">
@@ -18,8 +14,6 @@
             (click)="setActiveView('timeline')"
             [class.bg-blue-50]="activeView === 'timeline'"
             [class.text-blue-600]="activeView === 'timeline'"
-            [class.border-l-3]="activeView === 'timeline'"
-            [class.border-blue-600]="activeView === 'timeline'"
             class="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-gray-700 hover:bg-gray-50">
             📅 Timeline
           </button>
@@ -27,8 +21,6 @@
             (click)="setActiveView('backlog')"
             [class.bg-blue-50]="activeView === 'backlog'"
             [class.text-blue-600]="activeView === 'backlog'"
-            [class.border-l-3]="activeView === 'backlog'"
-            [class.border-blue-600]="activeView === 'backlog'"
             class="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-gray-700 hover:bg-gray-50">
             📋 Backlog
           </button>
@@ -36,26 +28,26 @@
             (click)="setActiveView('board')"
             [class.bg-blue-50]="activeView === 'board'"
             [class.text-blue-600]="activeView === 'board'"
-            [class.border-l-3]="activeView === 'board'"
-            [class.border-blue-600]="activeView === 'board'"
             class="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-gray-700 hover:bg-gray-50">
             📊 Board
           </button>
           <button 
-          (click)="setActiveView('reports')"
-          [class.bg-blue-50]="activeView === 'reports'"
-          [class.text-blue-600]="activeView === 'reports'"
-          [class.border-l-3]="activeView === 'reports'"
-          [class.border-blue-600]="activeView === 'reports'"
-          class="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-gray-700 hover:bg-gray-50">
-          📈 Reports
-        </button>
+            (click)="setActiveView('reports')"
+            [class.bg-blue-50]="activeView === 'reports'"
+            [class.text-blue-600]="activeView === 'reports'"
+            class="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors text-gray-700 hover:bg-gray-50">
+            📈 Reports
+          </button>
         </nav>
       </div>
 
       <div class="px-3">
         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">TEAM</p>
-        <button class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+        <button 
+          (click)="setActiveView('team')"
+          [class.bg-blue-50]="activeView === 'team'"
+          [class.text-blue-600]="activeView === 'team'"
+          class="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
           👥 Team Members
         </button>
       </div>
@@ -71,18 +63,226 @@
   <!-- Main Content -->
   <div class="flex-1 flex flex-col overflow-hidden bg-white">
     
-    <!-- ========================================= -->
+    <!-- BOARD VIEW -->
+    <div *ngIf="activeView === 'board'" class="flex-1 flex flex-col">
+      <div class="bg-white border-b border-gray-200 px-8 py-5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <h2 class="text-2xl font-semibold text-gray-900">Board</h2>
+            <select 
+  [(ngModel)]="selectedSprint"
+  class="text-sm border border-gray-300 rounded-md px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
+  <option *ngFor="let sprint of sprints" [value]="sprint">{{ sprint }}</option>
+</select>
+            <select 
+              [(ngModel)]="selectedAssignee"
+              class="text-sm border border-gray-300 rounded-md px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
+              <option value="all">All Assignees</option>
+              <option *ngFor="let assignee of getUniqueAssignees()" [value]="assignee">{{ assignee }}</option>
+            </select>
+            
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+              <input 
+                type="text"
+                [(ngModel)]="searchTerm"
+                placeholder="Search tasks..."
+                class="pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-md w-56 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      
+
+      
+
+      <!-- Board Columns -->
+       <div class="flex-1 px-8 py-6 overflow-hidden">
+        <div class="grid grid-cols-4 gap-4 h-full">
+          
+          <!-- TO DO Column -->
+          <div class="flex-1 flex flex-col min-w-0">
+            <div class="bg-slate-100 rounded-t-lg px-5 py-2 border-t-4 border-slate-500">
+
+              <div class="flex items-center justify-between">
+                <h3 class="text-base font-semibold text-gray-900">TO DO</h3>
+                <span class="bg-slate-200 text-slate-800 text-sm font-semibold px-2.5 py-0.5 rounded-full">
+                  {{ getFilteredTasks('todo').length }}
+                </span>
+              </div>
+            </div>
+            <div 
+              class="flex-1 slate-50 border border-gray-200 border-t-0 rounded-b-lg p-4 overflow-y-auto space-y-3"
+              (dragover)="onDragOver($event)"
+              (drop)="onDrop($event, 'todo')">
+              <div 
+  *ngFor="let task of getFilteredTasks('todo')" 
+  draggable="true"
+  (dragstart)="onDragStart($event, task)"
+  (dragend)="onDragEnd($event)"
+  (click)="openTaskDetails(task)"
+  class="bg-white rounded-lg p-1.5 border border-gray-200 shadow-sm hover:shadow-md hover:cursor-pointer transition-all">
+  <div class="flex items-start justify-between mb-1">
+    <h4 class="text-xs font-semibold text-gray-900 flex-1 pr-1">{{ task.title }}</h4>
+    <button 
+      (click)="deleteTask(task.id, 'todo'); $event.stopPropagation()"
+      class="text-gray-400 hover:text-red-600 transition-colors text-sm">
+      ✕
+    </button>
+  </div>
+  <p class="text-xs text-gray-500 mb-1.5 line-clamp-1">{{ task.desc }}</p>
+  
+  <div class="flex items-center justify-end">
+    <span [ngClass]="getTeamMemberColor(task.assignee)" 
+          class="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold">
+      {{ task.assignee }}
+    </span>
+  </div>
+</div>
+              
+              
+            </div>
+          </div>
+
+          <!-- IN PROGRESS Column -->
+          <div class="flex- flex flex-col min-w-0">
+            <div class="bg-blue-50 rounded-t-lg px-5 py-2 border-t-4 border-blue-400">
+              <div class="flex items-center justify-between">
+                <h3 class="text-base font-semibold text-gray-900">IN PROGRESS</h3>
+                <span class="bg-blue-200 text-blue-800 text-sm font-semibold px-2.5 py-0.5 rounded-full">
+                  {{ getFilteredTasks('inProgress').length }}
+                </span>
+              </div>
+            </div>
+            <div 
+              class="flex-1 bg-white border border-gray-200 border-t-0 rounded-b-lg p-4 overflow-y-auto space-y-3"
+              (dragover)="onDragOver($event)"
+              (drop)="onDrop($event, 'inProgress')">
+              <div 
+  *ngFor="let task of getFilteredTasks('inProgress')" 
+  draggable="true"
+  (dragstart)="onDragStart($event, task)"
+  (dragend)="onDragEnd($event)"
+  (click)="openTaskDetails(task)"
+  class="bg-white rounded-lg p-1.5 border border-gray-200 shadow-sm hover:shadow-md hover:cursor-pointer transition-all">
+  <div class="flex items-start justify-between mb-1">
+    <h4 class="text-xs font-semibold text-gray-900 flex-1 pr-1">{{ task.title }}</h4>
+    <button 
+      (click)="deleteTask(task.id, 'inProgress'); $event.stopPropagation()"
+      class="text-gray-400 hover:text-red-600 transition-colors text-sm ">
+      ✕
+    </button>
+  </div>
+  <p class="text-xs text-gray-500 text-gray-400 hover:text-red-600 transition-colors text-sm">{{ task.desc }}</p>
+  <div class="flex items-center justify-end">
+    <span [ngClass]="getTeamMemberColor(task.assignee)" 
+          class="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold">
+      {{ task.assignee }}
+    </span>
+  </div>
+</div>
+              
+            </div>
+          </div>
+
+          <!-- IN REVIEW Column -->
+          <div class="flex- flex flex-col min-w-0">
+           <div class="bg-amber-100 rounded-t-lg px-5 py-2 border-t-4 border-amber-500">
+              <div class="flex items-center justify-between">
+                <h3 class="text-base font-semibold text-gray-900">IN REVIEW</h3>
+                <span class="bg-amber-200 text-amber-800 text-sm font-semibold px-2.5 py-0.5 rounded-full">
+                  {{ getFilteredTasks('review').length }}
+                </span>
+              </div>
+            </div>
+            <div 
+              class="flex-1 bg-white border border-gray-200 border-t-0 rounded-b-lg p-4 overflow-y-auto space-y-3"
+              (dragover)="onDragOver($event)"
+              (drop)="onDrop($event, 'review')">
+              <div 
+  *ngFor="let task of getFilteredTasks('review')" 
+  draggable="true"
+  (dragstart)="onDragStart($event, task)"
+  (dragend)="onDragEnd($event)"
+  (click)="openTaskDetails(task)"
+  class="bg-white rounded-lg p-1.5 border border-gray-200 shadow-sm hover:shadow-md hover:cursor-pointer transition-all">
+  <div class="flex items-start justify-between mb-1">
+    <h4 class="text-xs font-semibold text-gray-900 flex-1 pr-1">{{ task.title }}</h4>
+    <button 
+      (click)="deleteTask(task.id, 'review'); $event.stopPropagation()"
+      class="text-gray-400 hover:text-red-600 transition-colors text-sm hover:text-red-600 transition-colors">
+      ✕
+    </button>
+  </div>
+  <p class="text-xs text-gray-500 mb-1.5 line-clamp-1">{{ task.desc }}</p>
+  <div class="flex items-center justify-end">
+    <span [ngClass]="getTeamMemberColor(task.assignee)" 
+          class="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold">
+      {{ task.assignee }}
+    </span>
+  </div>
+</div>
+              
+            </div>
+          </div>
+
+          <!-- DONE Column -->
+          <div class="flex- flex flex-col min-w-0">
+            <div class="bg-emerald-100 rounded-t-lg px-5 py-2 border-t-4 border-emerald-500">
+              <div class="flex items-center justify-between">
+                <h3 class="text-base font-semibold text-gray-900">DONE</h3>
+                <span class="bg-emerald-200 text-emerald-800 text-sm font-semibold px-2.5 py-0.5 rounded-full">
+                  {{ getFilteredTasks('done').length }}
+                </span>
+              </div>
+            </div>
+            <div 
+              class="flex-1 bg-white border border-gray-200 border-t-0 rounded-b-lg p-4 overflow-y-auto space-y-3"
+              (dragover)="onDragOver($event)"
+              (drop)="onDrop($event, 'done')">
+              <div 
+  *ngFor="let task of getFilteredTasks('done')" 
+  draggable="true"
+  (dragstart)="onDragStart($event, task)"
+  (dragend)="onDragEnd($event)"
+  (click)="openTaskDetails(task)"
+  class="bg-white rounded-lg p-1.5 border border-gray-200 shadow-sm hover:shadow-md hover:cursor-pointer transition-all">
+  <div class="flex items-start justify-between mb-1">
+    <h4 class="text-xs font-semibold text-gray-900 flex-1 pr-1">{{ task.title }}</h4>
+    <button 
+      (click)="deleteTask(task.id, 'done'); $event.stopPropagation()"
+      class="text-gray-400 hover:text-red-600 transition-colors text-sm hover:text-red-600 transition-colors">
+      ✕
+    </button>
+  </div>
+  <p class="text-xs text-gray-500 mb-1.5 line-clamp-1">{{ task.desc }}</p>
+  <div class="flex items-center justify-end">
+    <span [ngClass]="getTeamMemberColor(task.assignee)" 
+          class="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold">
+      {{ task.assignee }}
+    </span>
+  </div>
+</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
     <!-- BACKLOG VIEW -->
-    <!-- ========================================= -->
     <div *ngIf="activeView === 'backlog'" class="flex-1 flex flex-col">
-      <!-- Top Bar -->
       <div class="bg-white border-b border-gray-200 px-8 py-5">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-4">
             <h2 class="text-2xl font-semibold text-gray-900">Backlog</h2>
             <select 
               [(ngModel)]="selectedSprint"
-              class="text-sm border border-gray-300 rounded-md px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              class="text-sm border border-gray-300 rounded-md px- py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option *ngFor="let sprint of sprints" [value]="sprint">{{ sprint }}</option>
             </select>
           </div>
@@ -95,14 +295,11 @@
         </div>
       </div>
 
-      <!-- Backlog List -->
       <div class="flex-1 overflow-y-auto px-8 py-6">
         <div class="bg-white rounded-lg border border-gray-200">
-          <!-- Sprint Section -->
           <div class="border-b border-gray-200 p-4">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <button class="text-gray-600 hover:text-gray-900">▼</button>
                 <h3 class="font-semibold text-base text-gray-900">{{ selectedSprint }}</h3>
                 <span class="text-sm text-gray-500">({{ getAllBacklogTasks().length }} tasks)</span>
               </div>
@@ -114,21 +311,12 @@
             </div>
           </div>
 
-          <!-- Task List -->
           <div class="divide-y divide-gray-200">
             <div 
               *ngFor="let task of getAllBacklogTasks()"
-              draggable="true"
-              (dragstart)="onDragStart($event, task)"
-              (dragend)="onDragEnd($event)"
-              class="p-4 hover:bg-gray-50 cursor-move transition-colors group">
+              (click)="openTaskDetails(task)"
+              class="p-4 hover:bg-gray-50 cursor-pointer transition-colors group">
               <div class="flex items-start gap-4">
-                <button class="text-gray-300 group-hover:text-gray-400 mt-1">
-                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
-                  </svg>
-                </button>
-                
                 <div class="flex-1">
                   <div class="flex items-start justify-between gap-4">
                     <div class="flex-1">
@@ -148,27 +336,29 @@
                     </div>
                     
                     <div class="flex items-center gap-3">
-                      <select 
-                        [value]="task.status"
-                        (change)="moveTask(task.id, $any($event.target).value)"
-                        class="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="backlog">Backlog</option>
-                        <option value="todo">To Do</option>
-                        <option value="inProgress">In Progress</option>
-                        <option value="review">In Review</option>
-                        <option value="done">Done</option>
-                      </select>
-                      
-                      <span class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs font-bold">
-                        {{ task.assignee }}
-                      </span>
-                      
-                      <button 
-                        (click)="deleteTask(task.id, 'backlog')"
-                        class="text-red-500 hover:text-red-700 transition-colors text-lg">
-                        🗑
-                      </button>
-                    </div>
+  <select 
+    (click)="$event.stopPropagation()"
+    (change)="moveTaskFromBacklog(task, $event)"
+    [value]="task.status"
+    class="text-sm border border-gray-300 rounded-md px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+    <option value="backlog">Backlog</option>
+    <option value="todo">To Do</option>
+    <option value="inProgress">In Progress</option>
+    <option value="review">In Review</option>
+    <option value="done">Done</option>
+  </select>
+  
+  <span [ngClass]="getTeamMemberColor(task.assignee)" 
+        class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold">
+    {{ task.assignee }}
+  </span>
+  
+  <button 
+    (click)="deleteTask(task.id, task.status); $event.stopPropagation()"
+    class="text-red-500 hover:text-red-700 transition-colors text-lg">
+    ✕
+  </button>
+</div>
                   </div>
                 </div>
               </div>
@@ -178,517 +368,237 @@
       </div>
     </div>
 
-    <!-- ========================================= -->
-    <!-- BOARD VIEW -->
-    <!-- ========================================= -->
-    <div *ngIf="activeView === 'board'" class="flex-1 flex flex-col">
-      <!-- Top Bar -->
+    <!-- TEAM VIEW -->
+    <div *ngIf="activeView === 'team'" class="flex-1 flex flex-col">
+      <div class="bg-white border-b border-gray-200 px-8 py-5">
+        <div class="flex items-center justify-between">
+          <h2 class="text-2xl font-semibold text-gray-900">Team Members</h2>
+          <button 
+            (click)="openTeamModal()"
+            class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 flex items-center gap-2">
+            <span class="text-lg">+</span>
+            Add Member
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto px-8 py-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div *ngFor="let member of teamMembers" class="bg-white rounded-lg border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-4">
+                <span [ngClass]="member.color" class="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold">
+                  {{ member.initials }}
+                </span>
+                <div>
+                  <h3 class="font-semibold text-gray-900">{{ member.name }}</h3>
+                  <p class="text-xs text-gray-500">{{ member.role }}</p>
+                </div>
+              </div>
+              <button 
+                (click)="removeTeamMember(member.id)"
+                class="text-red-500 hover:text-red-700 transition-colors text-lg">
+                ✕
+              </button>
+            </div>
+            <p class="text-sm text-gray-600">{{ member.email }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS VIEW -->
+    <div *ngIf="activeView === 'reports'" class="flex-1 flex flex-col overflow-y-auto">
       <div class="bg-white border-b border-gray-200 px-8 py-5">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-4">
-            <h2 class="text-2xl font-semibold text-gray-900">Board</h2>
+            <h2 class="text-2xl font-semibold text-gray-900">Reports</h2>
             <select 
               [(ngModel)]="selectedSprint"
               class="text-sm border border-gray-300 rounded-md px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option *ngFor="let sprint of sprints" [value]="sprint">{{ sprint }}</option>
             </select>
           </div>
-          <div class="flex items-center gap-3">
-            <div class="relative">
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
-              <input 
-                type="text"
-                [(ngModel)]="searchTerm"
-                placeholder="Search tasks..."
-                class="pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-md w-72 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
-            </div>
-            <button 
-              (click)="openAddTaskModal()"
-              class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 flex items-center gap-2">
-              <span class="text-lg">+</span>
-              Add Task
-            </button>
-          </div>
         </div>
       </div>
 
-      <!-- Board Columns -->
-       <div class="flex-1 px-8 py-6">
-        <div class="flex gap-5 h-full">
-          
-          <!-- TO DO Column -->
-          <div class="w-80 flex flex-col">
-            <div class="bg-gray-100 rounded-t-lg px-5 py-4 border-t-4 border-gray-400">
-              <div class="flex items-center justify-between">
-                <h3 class="text-base font-semibold text-gray-900">TO DO</h3>
-                <span class="bg-white text-gray-600 text-sm font-semibold px-2.5 py-0.5 rounded-full">
-                  {{ tasks.todo.length }}
-                </span>
-              </div>
-            </div>
-            <div 
-              class="flex-1 bg-white border border-gray-200 border-t-0 rounded-b-lg p-4 overflow-y-auto space-y-3"
-              (dragover)="onDragOver($event)"
-              (drop)="onDrop($event, 'todo')">
-              <div 
-                *ngFor="let task of getFilteredTasks('todo')" 
-                draggable="true"
-                (dragstart)="onDragStart($event, task)"
-                (dragend)="onDragEnd($event)"
-                class="bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-move">
-                <div class="flex items-start justify-between mb-2">
-                  <h4 class="text-sm font-semibold text-gray-900 flex-1 pr-2">{{ task.title }}</h4>
-                  <button 
-                    (click)="deleteTask(task.id, 'todo')"
-                    class="text-red-500 hover:text-red-700 transition-colors text-lg">
-                    🗑
-                  </button>
-                </div>
-                <p class="text-xs text-gray-600 mb-3">{{ task.desc }}</p>
-                <div class="flex items-center justify-between">
-                  <span [ngClass]="getLabelColor(task.label)" 
-                        class="text-xs px-2.5 py-1 rounded font-semibold uppercase">
-                    {{ task.label }}
-                  </span>
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-500">{{ task.points }} pts</span>
-                    <span class="w-7 h-7 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs font-bold">
-                      {{ task.assignee }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <button 
-                (click)="openAddTaskModal('todo')"
-                class="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors">
-                + Add Task
-              </button>
-            </div>
+      <div class="px-8 py-6 space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div class="bg-white rounded-lg border border-gray-200 p-5">
+            <h3 class="text-sm font-semibold text-gray-600 mb-3">Total Tasks</h3>
+            <p class="text-3xl font-bold text-gray-900">{{ getReportStats().totalTasks }}</p>
           </div>
-
-          <!-- IN PROGRESS Column -->
-          <div class="w-80 flex flex-col">
-            <div class="bg-blue-50 rounded-t-lg px-5 py-4 border-t-4 border-blue-400">
-              <div class="flex items-center justify-between">
-                <h3 class="text-base font-semibold text-gray-900">IN PROGRESS</h3>
-                <span class="bg-white text-gray-600 text-sm font-semibold px-2.5 py-0.5 rounded-full">
-                  {{ tasks.inProgress.length }}
-                </span>
-              </div>
-            </div>
-            <div 
-              class="flex-1 bg-white border border-gray-200 border-t-0 rounded-b-lg p-4 overflow-y-auto space-y-3"
-              (dragover)="onDragOver($event)"
-              (drop)="onDrop($event, 'inProgress')">
-              <div 
-                *ngFor="let task of getFilteredTasks('inProgress')" 
-                draggable="true"
-                (dragstart)="onDragStart($event, task)"
-                (dragend)="onDragEnd($event)"
-                class="bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-move">
-                <div class="flex items-start justify-between mb-2">
-                  <h4 class="text-sm font-semibold text-gray-900 flex-1 pr-2">{{ task.title }}</h4>
-                  <button 
-                    (click)="deleteTask(task.id, 'inProgress')"
-                    class="text-red-500 hover:text-red-700 transition-colors text-lg">
-                    🗑
-                  </button>
-                </div>
-                <p class="text-xs text-gray-600 mb-3">{{ task.desc }}</p>
-                <div class="flex items-center justify-between">
-                  <span [ngClass]="getLabelColor(task.label)" 
-                        class="text-xs px-2.5 py-1 rounded font-semibold uppercase">
-                    {{ task.label }}
-                  </span>
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-500">{{ task.points }} pts</span>
-                    <span class="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">
-                      {{ task.assignee }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <button 
-                (click)="openAddTaskModal('inProgress')"
-                class="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors">
-                + Add Task
-              </button>
-            </div>
+          <div class="bg-white rounded-lg border border-gray-200 p-5">
+            <h3 class="text-sm font-semibold text-gray-600 mb-3">Completed</h3>
+            <p class="text-3xl font-bold text-green-600">{{ getReportStats().completedTasks }}</p>
+            <p class="text-xs text-gray-500 mt-1">{{ getReportStats().completionRate }}%</p>
           </div>
-
-          <!-- IN REVIEW Column -->
-          <div class="w-80 flex flex-col">
-            <div class="bg-yellow-50 rounded-t-lg px-5 py-4 border-t-4 border-yellow-400">
-              <div class="flex items-center justify-between">
-                <h3 class="text-base font-semibold text-gray-900">IN REVIEW</h3>
-                <span class="bg-white text-gray-600 text-sm font-semibold px-2.5 py-0.5 rounded-full">
-                  {{ tasks.review.length }}
-                </span>
-              </div>
-            </div>
-            <div 
-              class="flex-1 bg-white border border-gray-200 border-t-0 rounded-b-lg p-4 overflow-y-auto space-y-3"
-              (dragover)="onDragOver($event)"
-              (drop)="onDrop($event, 'review')">
-              <div 
-                *ngFor="let task of getFilteredTasks('review')" 
-                draggable="true"
-                (dragstart)="onDragStart($event, task)"
-                (dragend)="onDragEnd($event)"
-                class="bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-move">
-                <div class="flex items-start justify-between mb-2">
-                  <h4 class="text-sm font-semibold text-gray-900 flex-1 pr-2">{{ task.title }}</h4>
-                  <button 
-                    (click)="deleteTask(task.id, 'review')"
-                    class="text-red-500 hover:text-red-700 transition-colors text-lg">
-                    🗑
-                  </button>
-                </div>
-                <p class="text-xs text-gray-600 mb-3">{{ task.desc }}</p>
-                <div class="flex items-center justify-between">
-                  <span [ngClass]="getLabelColor(task.label)" 
-                        class="text-xs px-2.5 py-1 rounded font-semibold uppercase">
-                    {{ task.label }}
-                  </span>
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-500">{{ task.points }} pts</span>
-                    <span class="w-7 h-7 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs font-bold">
-                      {{ task.assignee }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <button 
-                (click)="openAddTaskModal('review')"
-                class="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors">
-                + Add Task
-              </button>
-            </div>
+          <div class="bg-white rounded-lg border border-gray-200 p-5">
+            <h3 class="text-sm font-semibold text-gray-600 mb-3">In Progress</h3>
+            <p class="text-3xl font-bold text-blue-600">{{ getReportStats().inProgressTasks }}</p>
           </div>
-
-          <!-- DONE Column -->
-          <div class="w-80 flex flex-col">
-            <div class="bg-green-50 rounded-t-lg px-5 py-4 border-t-4 border-green-400">
-              <div class="flex items-center justify-between">
-                <h3 class="text-base font-semibold text-gray-900">DONE</h3>
-                <span class="bg-white text-gray-600 text-sm font-semibold px-2.5 py-0.5 rounded-full">
-                  {{ tasks.done.length }}
-                </span>
-              </div>
-            </div>
-            <div 
-              class="flex-1 bg-white border border-gray-200 border-t-0 rounded-b-lg p-4 overflow-y-auto space-y-3"
-              (dragover)="onDragOver($event)"
-              (drop)="onDrop($event, 'done')">
-              <div 
-                *ngFor="let task of getFilteredTasks('done')" 
-                draggable="true"
-                (dragstart)="onDragStart($event, task)"
-                (dragend)="onDragEnd($event)"
-                class="bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-move">
-                <div class="flex items-start justify-between mb-2">
-                  <h4 class="text-sm font-semibold text-gray-900 flex-1 pr-2">{{ task.title }}</h4>
-                  <button 
-                    (click)="deleteTask(task.id, 'done')"
-                    class="text-red-500 hover:text-red-700 transition-colors text-lg">
-                    🗑
-                  </button>
-                </div>
-                <p class="text-xs text-gray-600 mb-3">{{ task.desc }}</p>
-                <div class="flex items-center justify-between">
-                  <span [ngClass]="getLabelColor(task.label)" 
-                        class="text-xs px-2.5 py-1 rounded font-semibold uppercase">
-                    {{ task.label }}
-                  </span>
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs text-gray-500">{{ task.points }} pts</span>
-                    <span class="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">
-                      {{ task.assignee }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div class="bg-white rounded-lg border border-gray-200 p-5">
+            <h3 class="text-sm font-semibold text-gray-600 mb-3">Story Points</h3>
+            <p class="text-3xl font-bold text-purple-600">{{ getReportStats().totalPoints }}</p>
           </div>
-
-        </div>
-      </div>
-    </div>
-    <!-- ========================================= -->
-<!-- REPORTS VIEW -->
-<!-- ========================================= -->
-<div *ngIf="activeView === 'reports'" class="flex-1 flex flex-col overflow-y-auto">
-  <!-- Top Bar -->
-  <div class="bg-white border-b border-gray-200 px-8 py-5">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-4">
-        <h2 class="text-2xl font-semibold text-gray-900">Reports & Analytics</h2>
-        <select 
-          [(ngModel)]="selectedSprint"
-          class="text-sm border border-gray-300 rounded-md px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option *ngFor="let sprint of sprints" [value]="sprint">{{ sprint }}</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <!-- Reports Content -->
-  <div class="px-8 py-6 space-y-6">
-    
-    <!-- Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-      <!-- Total Tasks Card -->
-      <div class="bg-white rounded-lg border border-gray-200 p-5">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-semibold text-gray-600">Total Tasks</h3>
-          <span class="text-2xl">📊</span>
-        </div>
-        <p class="text-3xl font-bold text-gray-900">{{ getReportStats().totalTasks }}</p>
-        <p class="text-xs text-gray-500 mt-1">All tasks in {{ selectedSprint }}</p>
-      </div>
-
-      <!-- Completed Tasks Card -->
-      <div class="bg-white rounded-lg border border-gray-200 p-5">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-semibold text-gray-600">Completed</h3>
-          <span class="text-2xl">✅</span>
-        </div>
-        <p class="text-3xl font-bold text-green-600">{{ getReportStats().completedTasks }}</p>
-        <p class="text-xs text-gray-500 mt-1">{{ getReportStats().completionRate }}% completion rate</p>
-      </div>
-
-      <!-- In Progress Card -->
-      <div class="bg-white rounded-lg border border-gray-200 p-5">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-semibold text-gray-600">In Progress</h3>
-          <span class="text-2xl">⚡</span>
-        </div>
-        <p class="text-3xl font-bold text-blue-600">{{ getReportStats().inProgressTasks }}</p>
-        <p class="text-xs text-gray-500 mt-1">Currently active tasks</p>
-      </div>
-
-      <!-- Total Points Card -->
-      <div class="bg-white rounded-lg border border-gray-200 p-5">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-semibold text-gray-600">Story Points</h3>
-          <span class="text-2xl">🎯</span>
-        </div>
-        <p class="text-3xl font-bold text-purple-600">{{ getReportStats().totalPoints }}</p>
-        <p class="text-xs text-gray-500 mt-1">{{ getReportStats().completedPoints }} points completed</p>
-      </div>
-    </div>
-
-    <!-- Status Distribution Chart -->
-    <div class="bg-white rounded-lg border border-gray-200 p-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-5">Task Distribution by Status</h3>
-      <div class="flex items-end gap-4 h-64">
-        <div class="flex-1 flex flex-col items-center gap-2">
-          <div class="w-full bg-gray-200 rounded-t-lg flex items-end justify-center" 
-               [style.height.%]="getStatusPercentage('backlog')">
-            <span class="text-sm font-bold text-gray-700 mb-2" *ngIf="getStatusPercentage('backlog') > 10">
-              {{ getStatusCount('backlog') }}
-            </span>
-          </div>
-          <span class="text-xs font-semibold text-gray-600">Backlog</span>
-          <span class="text-xs text-gray-500">{{ getStatusPercentage('backlog') }}%</span>
-        </div>
-
-        <div class="flex-1 flex flex-col items-center gap-2">
-          <div class="w-full bg-gray-400 rounded-t-lg flex items-end justify-center" 
-               [style.height.%]="getStatusPercentage('todo')">
-            <span class="text-sm font-bold text-white mb-2" *ngIf="getStatusPercentage('todo') > 10">
-              {{ getStatusCount('todo') }}
-            </span>
-          </div>
-          <span class="text-xs font-semibold text-gray-600">To Do</span>
-          <span class="text-xs text-gray-500">{{ getStatusPercentage('todo') }}%</span>
-        </div>
-
-        <div class="flex-1 flex flex-col items-center gap-2">
-          <div class="w-full bg-blue-400 rounded-t-lg flex items-end justify-center" 
-               [style.height.%]="getStatusPercentage('inProgress')">
-            <span class="text-sm font-bold text-white mb-2" *ngIf="getStatusPercentage('inProgress') > 10">
-              {{ getStatusCount('inProgress') }}
-            </span>
-          </div>
-          <span class="text-xs font-semibold text-gray-600">In Progress</span>
-          <span class="text-xs text-gray-500">{{ getStatusPercentage('inProgress') }}%</span>
-        </div>
-
-        <div class="flex-1 flex flex-col items-center gap-2">
-          <div class="w-full bg-yellow-400 rounded-t-lg flex items-end justify-center" 
-               [style.height.%]="getStatusPercentage('review')">
-            <span class="text-sm font-bold text-gray-800 mb-2" *ngIf="getStatusPercentage('review') > 10">
-              {{ getStatusCount('review') }}
-            </span>
-          </div>
-          <span class="text-xs font-semibold text-gray-600">In Review</span>
-          <span class="text-xs text-gray-500">{{ getStatusPercentage('review') }}%</span>
-        </div>
-
-        <div class="flex-1 flex flex-col items-center gap-2">
-          <div class="w-full bg-green-500 rounded-t-lg flex items-end justify-center" 
-               [style.height.%]="getStatusPercentage('done')">
-            <span class="text-sm font-bold text-white mb-2" *ngIf="getStatusPercentage('done') > 10">
-              {{ getStatusCount('done') }}
-            </span>
-          </div>
-          <span class="text-xs font-semibold text-gray-600">Done</span>
-          <span class="text-xs text-gray-500">{{ getStatusPercentage('done') }}%</span>
         </div>
       </div>
     </div>
 
-    <!-- Two Column Layout -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      
-      <!-- Tasks by Label -->
-      <div class="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Tasks by Category</h3>
-        <div class="space-y-3">
-          <div *ngFor="let label of getLabelStats()" class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <span [ngClass]="getLabelColor(label.name)" 
-                    class="text-xs px-2.5 py-1 rounded font-semibold uppercase">
-                {{ label.name }}
-              </span>
-            </div>
-            <div class="flex items-center gap-3">
-              <div class="w-32 bg-gray-200 rounded-full h-2">
-                <div class="bg-blue-600 h-2 rounded-full" 
-                     [style.width.%]="label.percentage"></div>
-              </div>
-              <span class="text-sm font-semibold text-gray-700 w-12 text-right">{{ label.count }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tasks by Priority -->
-      <div class="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Tasks by Priority</h3>
-        <div class="space-y-3">
-          <div *ngFor="let priority of getPriorityStats()" class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <span [ngClass]="getPriorityColor(priority.name)" 
-                    class="text-sm font-medium">
-                {{ priority.name }}
-              </span>
-            </div>
-            <div class="flex items-center gap-3">
-              <div class="w-32 bg-gray-200 rounded-full h-2">
-                <div [ngClass]="getPriorityBarColor(priority.name)" 
-                     class="h-2 rounded-full" 
-                     [style.width.%]="priority.percentage"></div>
-              </div>
-              <span class="text-sm font-semibold text-gray-700 w-12 text-right">{{ priority.count }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Team Performance -->
-    <div class="bg-white rounded-lg border border-gray-200 p-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">Team Member Performance</h3>
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead>
-            <tr class="border-b border-gray-200">
-              <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Team Member</th>
-              <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700">Total Tasks</th>
-              <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700">Completed</th>
-              <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700">In Progress</th>
-              <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700">Points</th>
-              <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700">Completion Rate</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let member of getTeamStats()" class="border-b border-gray-100 hover:bg-gray-50">
-              <td class="py-3 px-4">
-                <div class="flex items-center gap-2">
-                  <span class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs font-bold">
-                    {{ member.assignee }}
-                  </span>
-                  <span class="text-sm font-medium text-gray-900">{{ member.assignee }}</span>
-                </div>
-              </td>
-              <td class="text-center py-3 px-4 text-sm text-gray-700">{{ member.totalTasks }}</td>
-              <td class="text-center py-3 px-4 text-sm text-green-600 font-semibold">{{ member.completed }}</td>
-              <td class="text-center py-3 px-4 text-sm text-blue-600 font-semibold">{{ member.inProgress }}</td>
-              <td class="text-center py-3 px-4 text-sm text-purple-600 font-semibold">{{ member.points }}</td>
-              <td class="text-center py-3 px-4">
-                <span class="text-sm font-semibold" 
-                      [ngClass]="member.completionRate >= 50 ? 'text-green-600' : 'text-orange-500'">
-                  {{ member.completionRate }}%
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-    <!-- ========================================= -->
-    <!-- TIMELINE VIEW (Placeholder) -->
-    <!-- ========================================= -->
-    <div *ngIf="activeView === 'timeline'" class="flex-1 flex items-center justify-center">
-      <div class="text-center">
-        <h3 class="text-2xl font-semibold text-gray-700 mb-2">Timeline View</h3>
-        <p class="text-gray-500">Coming soon...</p>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- Add Task Modal -->
-<div *ngIf="showAddTask" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-  <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-    <div class="flex items-center justify-between mb-5">
-      <h3 class="text-xl font-bold text-gray-900">Add New Task</h3>
+    <!-- Add Team Member Modal -->
+<div *ngIf="showTeamModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-xl p-8 w-full max-w-lg shadow-2xl">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-2xl font-bold text-gray-900">Add Team Member</h3>
       <button 
-        (click)="closeAddTaskModal()" 
+        (click)="closeTeamModal()" 
         class="text-gray-400 hover:text-gray-700 text-2xl">
         ✕
       </button>
     </div>
     
-    <div class="space-y-4">
+    <div class="space-y-5">
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">Task Title</label>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
         <input
           type="text"
-          [(ngModel)]="newTaskTitle"
-          placeholder="Enter task title"
+          [(ngModel)]="newTeamMemberName"
+          placeholder="Enter member name"
           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"/>
       </div>
       
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">Description</label>
-        <textarea
-          [(ngModel)]="newTaskDesc"
-          placeholder="Enter task description"
-          rows="3"
-          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"></textarea>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Initials</label>
+        <input
+          type="text"
+          [(ngModel)]="newTeamMemberInitials"
+          placeholder="e.g., JD"
+          maxlength="3"
+          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"/>
       </div>
       
-      <div class="flex gap-3 pt-2">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+        <input
+          type="email"
+          [(ngModel)]="newTeamMemberEmail"
+          placeholder="member@company.com"
+          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"/>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Role</label>
+        <input
+          type="text"
+          [(ngModel)]="newTeamMemberRole"
+          placeholder="e.g., Developer, Designer"
+          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"/>
+      </div>
+      
+      <div class="flex gap-3 pt-4 border-t border-gray-200">
         <button
-          (click)="closeAddTaskModal()"
+          (click)="closeTeamModal()"
           class="flex-1 px-4 py-2.5 border-2 border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50">
           Cancel
         </button>
         <button
-          (click)="addNewTask()"
+          (click)="addTeamMember()"
           class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700">
-          Add Task
+          Add Member
         </button>
       </div>
     </div>
   </div>
+</div>
+
+
+
+<!-- Add/Edit Task Modal -->
+<!-- Add New Task Modal (NO Comments) -->
+<div *ngIf="showAddTask && !showTaskDetails" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-lg p-5 w-full max-w-md shadow-xl">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-bold text-gray-900">Add New Task</h3>
+      <button (click)="closeAddTaskModal()" class="text-gray-400 hover:text-gray-700 text-xl">✕</button>
+    </div>
+    
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">Task Title <span class="text-red-500">*</span></label>
+        <input type="text" [(ngModel)]="newTaskTitle" placeholder="Enter task title" class="w-full px-2.5 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+      </div>
+      
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">Description</label>
+        <textarea [(ngModel)]="newTaskDesc" placeholder="Enter task description" rows="2" class="w-full px-2.5 py-1.5 border border-gray-300 rounded text-sm resize-none"></textarea>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Assignee <span class="text-red-500">*</span></label>
+          <select [(ngModel)]="newTaskAssignee" class="w-full px-2.5 py-1.5 border border-gray-300 rounded text-sm cursor-pointer">
+            <option value="" disabled>Select assignee</option>
+            <option *ngFor="let member of teamMembers" [value]="member.initials">{{ member.name }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Due Date</label>
+          <input type="date" [(ngModel)]="newTaskDueDate" class="w-full px-2.5 py-1.5 border border-gray-300 rounded text-sm"/>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-3 border-t border-gray-200">
+        <button (click)="closeAddTaskModal()" class="flex-1 px-3 py-1.5 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+        <button (click)="addNewTask()" [disabled]="!newTaskTitle.trim() || !newTaskAssignee" class="flex-1 px-3 py-1.5 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 disabled:bg-gray-400">Add Task</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Task Modal (WITH Comments) -->
+<div *ngIf="showTaskDetails" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-lg p-5 w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-4 sticky top-0 bg-white">
+      <h3 class="text-lg font-bold text-gray-900">Edit Task</h3>
+      <button (click)="closeTaskDetails()" class="text-gray-400 hover:text-gray-700 text-xl">✕</button>
+    </div>
+    
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">Task Title <span class="text-red-500">*</span></label>
+        <input type="text" [(ngModel)]="newTaskTitle" placeholder="Enter task title" class="w-full px-2.5 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+      </div>
+      
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">Description</label>
+        <textarea [(ngModel)]="newTaskDesc" placeholder="Enter task description" rows="2" class="w-full px-2.5 py-1.5 border border-gray-300 rounded text-sm resize-none"></textarea>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Assignee <span class="text-red-500">*</span></label>
+          <select [(ngModel)]="newTaskAssignee" class="w-full px-2.5 py-1.5 border border-gray-300 rounded text-sm cursor-pointer">
+            <option *ngFor="let member of teamMembers" [value]="member.initials">{{ member.name }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Due Date</label>
+          <input type="date" [(ngModel)]="newTaskDueDate" class="w-full px-2.5 py-1.5 border border-gray-300 rounded text-sm"/>
+        </div>
+      </div>
+
+    <!-- Comments Section -->
+<div class="border-t border-gray-200 pt-3 mt-3">
+  <label class="block text-xs font-semibold text-gray-700 mb-2">💬 Add Comment</label>
+  
+  <div class="flex gap-1">
+    <textarea [(ngModel)]="newComment" placeholder="Add a comment..." rows="2" class="flex-1 px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+    <button (click)="addComment()" [disabled]="!newComment.trim()" class="px-2 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 disabled:bg-gray-400">Send</button>
+  </div>
+</div>
+
+<div class="flex gap-2 pt-3 border-t border-gray-200">
+  <button (click)="closeTaskDetails()" class="flex-1 px-3 py-1.5 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+  <button (click)="updateTask()" class="flex-1 px-3 py-1.5 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700">Update</button>
+  <button (click)="deleteTask(selectedTask!.id, selectedTask!.status)" class="px-3 py-1.5 bg-red-600 text-white rounded text-sm font-medium hover:bg-red-700">Delete</button>
 </div>

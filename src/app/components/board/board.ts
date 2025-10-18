@@ -2,6 +2,13 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
+interface TaskComment {
+  id: number;
+  text: string;
+  timestamp: Date;
+  author: string;
+}
+
 interface Task {
   id: number;
   title: string;
@@ -12,15 +19,19 @@ interface Task {
   points: number;
   status: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done';
   sprint?: string;
+  dueDate?: string;
+  comments?: TaskComment[];
 }
+
 interface TeamMember {
   id: number;
   name: string;
-  email: string;
-  role: string;
   initials: string;
   color: string;
+  email: string;
+  role: string;
 }
+
 @Component({
   selector: 'app-board',
   standalone: true,
@@ -28,19 +39,37 @@ interface TeamMember {
   templateUrl: './board.html',
   styleUrls: ['./board.scss']
 })
+
+
 export class BoardComponent {
   activeView: 'board' | 'backlog' | 'timeline' | 'reports' | 'team' = 'board';
   selectedSprint = 'Sprint 3';
+  selectedAssignee = 'all';
   showAddTask = false;
+  showTaskDetails = false;
+  showTeamModal = false;
   newTaskTitle = '';
   newTaskDesc = '';
+  newTaskPriority: 'Critical' | 'High' | 'Medium' | 'Low' = 'Medium';
+  newTaskAssignee = '';
+  newTaskPoints = 2;
+  newTaskLabel: 'BILLING' | 'ACCOUNTS' | 'FORMS' | 'FEEDBACK' = 'ACCOUNTS';
+  newTaskDueDate = '';
   searchTerm = '';
   draggedTask: Task | null = null;
   newTaskStatus: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done' = 'backlog';
+  selectedTask: Task | null = null;
+  newTeamMemberName = '';
+  newTeamMemberInitials = '';
+  newTeamMemberRole = '';
+  newTeamMemberEmail = '';
+  newComment = '';
+  
 
   sprints = ['Sprint 3', 'Sprint 4', 'Sprint 5', 'All Sprints'];
 
-  // ⚠️ Empty tasks - तुम्ही स्वतः tasks add करू शकता
+  teamMembers: TeamMember[] = [];
+
   tasks: {
     backlog: Task[];
     todo: Task[];
@@ -55,32 +84,62 @@ export class BoardComponent {
     done: []
   };
 
-  constructor() {
-    // Load tasks from localStorage on component init
-    this.loadTasksFromStorage();
+  addComment(): void {
+  if (this.selectedTask && this.newComment.trim()) {
+    if (!this.selectedTask.comments) {
+      this.selectedTask.comments = [];
+    }
+    const comment: TaskComment = {
+      id: Date.now(),
+      text: this.newComment,
+      timestamp: new Date(),
+      author: 'Current User'
+    };
+    this.selectedTask.comments.push(comment);
+    this.newComment = '';
+    this.saveTasksToStorage();
   }
+}
+
+deleteComment(taskId: number, commentId: number): void {
+  if (this.selectedTask && this.selectedTask.comments) {
+    this.selectedTask.comments = this.selectedTask.comments.filter(c => c.id !== commentId);
+    this.saveTasksToStorage();
+  }
+}
+
+  constructor() {
+    this.loadTasksFromStorage();
+    this.loadTeamMembersFromStorage();
+  }
+
+
+  
 
   // ========================================
   // LOCAL STORAGE METHODS
   // ========================================
 
   private loadTasksFromStorage(): void {
-    const savedTasks = localStorage.getItem('kanban-tasks');
-    if (savedTasks) {
-      try {
-        this.tasks = JSON.parse(savedTasks);
-      } catch (e) {
-        console.error('Error loading tasks from storage:', e);
-      }
+    const savedTasks = JSON.parse(sessionStorage.getItem('kanban-tasks') || '{}');
+    if (Object.keys(savedTasks).length > 0) {
+      this.tasks = savedTasks;
     }
   }
 
   private saveTasksToStorage(): void {
-    try {
-      localStorage.setItem('kanban-tasks', JSON.stringify(this.tasks));
-    } catch (e) {
-      console.error('Error saving tasks to storage:', e);
+    sessionStorage.setItem('kanban-tasks', JSON.stringify(this.tasks));
+  }
+
+  private loadTeamMembersFromStorage(): void {
+    const savedMembers = JSON.parse(sessionStorage.getItem('kanban-team-members') || '[]');
+    if (savedMembers.length > 0) {
+      this.teamMembers = savedMembers;
     }
+  }
+
+  private saveTeamMembersToStorage(): void {
+    sessionStorage.setItem('kanban-team-members', JSON.stringify(this.teamMembers));
   }
 
   // ========================================
@@ -107,44 +166,17 @@ export class BoardComponent {
     return colors[priority] || 'text-gray-500';
   }
 
+  getTeamMemberColor(initials: string): string {
+    const member = this.teamMembers.find(tm => tm.initials === initials);
+    return member ? member.color : 'bg-gray-500';
+  }
+
   setActiveView(view: 'board' | 'backlog' | 'timeline' | 'reports' | 'team'): void {
     this.activeView = view;
   }
 
   // ========================================
-  // TASK MOVEMENT
-  // ========================================
-
-  moveTask(taskId: number, newStatus: string): void {
-    const allStatuses: Array<'backlog' | 'todo' | 'inProgress' | 'review' | 'done'> = 
-      ['backlog', 'todo', 'inProgress', 'review', 'done'];
-    
-    let task: Task | undefined;
-    let oldStatus: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done' | undefined;
-
-    // Find task and its current status
-    for (const status of allStatuses) {
-      const foundTask = this.tasks[status].find(t => t.id === taskId);
-      if (foundTask) {
-        task = foundTask;
-        oldStatus = status;
-        break;
-      }
-    }
-
-    if (task && oldStatus && oldStatus !== newStatus) {
-      // Remove from old status
-      this.tasks[oldStatus] = this.tasks[oldStatus].filter(t => t.id !== taskId);
-      
-      // Add to new status
-      task.status = newStatus as any;
-      this.tasks[newStatus as keyof typeof this.tasks].push(task);
-      this.saveTasksToStorage(); 
-    }
-  }
-
-  // ========================================
-  // DRAG & DROP FUNCTIONALITY
+  // DRAG & DROP FUNCTIONALITY - FIXED
   // ========================================
 
   onDragStart(event: DragEvent, task: Task): void {
@@ -153,9 +185,12 @@ export class BoardComponent {
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/html', '');
     }
+    // Add visual feedback
+    (event.target as HTMLElement).style.opacity = '0.5';
   }
 
   onDragEnd(event: DragEvent): void {
+    (event.target as HTMLElement).style.opacity = '1';
     this.draggedTask = null;
   }
 
@@ -169,19 +204,48 @@ export class BoardComponent {
   onDrop(event: DragEvent, newStatus: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done'): void {
     event.preventDefault();
     
-    if (this.draggedTask && this.draggedTask.status !== newStatus) {
-      this.moveTask(this.draggedTask.id, newStatus);
+    if (this.draggedTask) {
+      const oldStatus = this.draggedTask.status;
+      
+      if (oldStatus !== newStatus) {
+        // Remove from old column
+        this.tasks[oldStatus] = this.tasks[oldStatus].filter(t => t.id !== this.draggedTask!.id);
+        
+        // Update task status
+        this.draggedTask.status = newStatus;
+        
+        // Add to new column
+        this.tasks[newStatus].push(this.draggedTask);
+        
+        // Save to storage
+        this.saveTasksToStorage();
+        
+        console.log(`Task moved from ${oldStatus} to ${newStatus}`);
+      }
     }
+    
+    this.draggedTask = null;
   }
 
   // ========================================
   // SEARCH & FILTER
   // ========================================
 
+  getUniqueAssignees(): string[] {
+    const allTasks = [
+      ...this.tasks.backlog,
+      ...this.tasks.todo,
+      ...this.tasks.inProgress,
+      ...this.tasks.review,
+      ...this.tasks.done
+    ];
+    const assignees = [...new Set(allTasks.map(t => t.assignee))];
+    return assignees.sort();
+  }
+
   getFilteredTasks(status: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done'): Task[] {
     let filtered = this.tasks[status];
 
-    // Filter by search term
     if (this.searchTerm.trim()) {
       const search = this.searchTerm.toLowerCase();
       filtered = filtered.filter(task => 
@@ -190,9 +254,12 @@ export class BoardComponent {
       );
     }
 
-    // Filter by sprint (if not "All Sprints")
     if (this.selectedSprint !== 'All Sprints') {
       filtered = filtered.filter(task => task.sprint === this.selectedSprint);
+    }
+
+    if (this.selectedAssignee !== 'all') {
+      filtered = filtered.filter(task => task.assignee === this.selectedAssignee);
     }
 
     return filtered;
@@ -201,228 +268,256 @@ export class BoardComponent {
   getAllBacklogTasks(): Task[] {
     let allTasks = [...this.tasks.backlog];
 
-    // Filter by sprint
     if (this.selectedSprint !== 'All Sprints') {
       allTasks = allTasks.filter(task => task.sprint === this.selectedSprint);
+    }
+
+    if (this.selectedAssignee !== 'all') {
+      allTasks = allTasks.filter(task => task.assignee === this.selectedAssignee);
     }
 
     return allTasks;
   }
 
   // ========================================
-  // ADD TASK MODAL
+  // ADD/EDIT TASK MODAL - FIXED
   // ========================================
 
   openAddTaskModal(status?: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done'): void {
+    // Close team modal if open
+    this.showTeamModal = false;
+    
     this.showAddTask = true;
+    this.showTaskDetails = false;
     this.newTaskStatus = status || 'backlog';
+    this.resetTaskForm();
+    
+    // Set default assignee if team members exist
+    if (this.teamMembers.length > 0) {
+      this.newTaskAssignee = this.teamMembers[0].initials;
+    }
   }
 
   closeAddTaskModal(): void {
     this.showAddTask = false;
+    this.resetTaskForm();
+  }
+
+  resetTaskForm(): void {
     this.newTaskTitle = '';
     this.newTaskDesc = '';
+    this.newTaskPriority = 'Medium';
+    this.newTaskPoints = 2;
+    this.newTaskLabel = 'ACCOUNTS';
+    this.newTaskDueDate = '';
     this.newTaskStatus = 'backlog';
+    
+    if (this.teamMembers.length > 0) {
+      this.newTaskAssignee = this.teamMembers[0].initials;
+    } else {
+      this.newTaskAssignee = '';
+    }
   }
 
   addNewTask(): void {
-    if (this.newTaskTitle.trim()) {
+    if (this.newTaskTitle.trim() && this.newTaskAssignee) {
       const newTask: Task = {
         id: Date.now(),
         title: this.newTaskTitle,
         desc: this.newTaskDesc || 'No description',
-        priority: 'Medium',
-        assignee: 'SR',
-        label: 'ACCOUNTS',
-        points: 2,
+        priority: this.newTaskPriority,
+        assignee: this.newTaskAssignee,
+        label: this.newTaskLabel,
+        points: this.newTaskPoints,
         status: this.newTaskStatus,
-        sprint: this.selectedSprint !== 'All Sprints' ? this.selectedSprint : 'Sprint 3'
+        sprint: this.selectedSprint !== 'All Sprints' ? this.selectedSprint : 'Sprint 3',
+        dueDate: this.newTaskDueDate
       };
       
       this.tasks[this.newTaskStatus].push(newTask);
-       this.saveTasksToStorage();
+      this.saveTasksToStorage();
       this.closeAddTaskModal();
+    } else {
+      alert('Please fill in the task title and select an assignee!');
     }
-    
   }
+
+  updateTask(): void {
+    if (this.selectedTask && this.newTaskTitle.trim()) {
+      const allStatuses: Array<'backlog' | 'todo' | 'inProgress' | 'review' | 'done'> = 
+        ['backlog', 'todo', 'inProgress', 'review', 'done'];
+      
+      for (const status of allStatuses) {
+        const idx = this.tasks[status].findIndex(t => t.id === this.selectedTask?.id);
+        if (idx !== -1) {
+          this.tasks[status][idx] = {
+            ...this.tasks[status][idx],
+            title: this.newTaskTitle,
+            desc: this.newTaskDesc,
+            priority: this.newTaskPriority,
+            assignee: this.newTaskAssignee,
+            points: this.newTaskPoints,
+            label: this.newTaskLabel,
+            dueDate: this.newTaskDueDate
+          };
+          this.saveTasksToStorage();
+          break;
+        }
+      }
+      this.closeTaskDetails();
+    }
+  }
+
   deleteTask(taskId: number, status: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done'): void {
     if (confirm('Are you sure you want to delete this task?')) {
       this.tasks[status] = this.tasks[status].filter(t => t.id !== taskId);
       this.saveTasksToStorage();
+      this.closeTaskDetails();
     }
   }
+
   // ========================================
-// REPORTS & ANALYTICS METHODS
-// ========================================
+  // TASK DETAILS MODAL
+  // ========================================
 
-getReportStats() {
-  let allTasks: Task[] = [];
-  
-  // Collect all tasks based on selected sprint
-  if (this.selectedSprint === 'All Sprints') {
-    allTasks = [
-      ...this.tasks.backlog,
-      ...this.tasks.todo,
-      ...this.tasks.inProgress,
-      ...this.tasks.review,
-      ...this.tasks.done
-    ];
-  } else {
-    allTasks = [
-      ...this.tasks.backlog.filter(t => t.sprint === this.selectedSprint),
-      ...this.tasks.todo.filter(t => t.sprint === this.selectedSprint),
-      ...this.tasks.inProgress.filter(t => t.sprint === this.selectedSprint),
-      ...this.tasks.review.filter(t => t.sprint === this.selectedSprint),
-      ...this.tasks.done.filter(t => t.sprint === this.selectedSprint)
-    ];
+  openTaskDetails(task: Task): void {
+    this.selectedTask = task;
+    this.newTaskTitle = task.title;
+    this.newTaskDesc = task.desc;
+    this.newTaskPriority = task.priority;
+    this.newTaskAssignee = task.assignee;
+    this.newTaskPoints = task.points;
+    this.newTaskLabel = task.label;
+    this.newTaskDueDate = task.dueDate || '';
+    this.showTaskDetails = true;
+    this.showAddTask = false;
   }
 
-  const totalTasks = allTasks.length;
-  const completedTasks = allTasks.filter(t => t.status === 'done').length;
-  const inProgressTasks = allTasks.filter(t => t.status === 'inProgress').length;
-  const totalPoints = allTasks.reduce((sum, task) => sum + task.points, 0);
-  const completedPoints = allTasks.filter(t => t.status === 'done').reduce((sum, task) => sum + task.points, 0);
-  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-  return {
-    totalTasks,
-    completedTasks,
-    inProgressTasks,
-    totalPoints,
-    completedPoints,
-    completionRate
-  };
-}
-
-getStatusCount(status: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done'): number {
-  if (this.selectedSprint === 'All Sprints') {
-    return this.tasks[status].length;
-  }
-  return this.tasks[status].filter(t => t.sprint === this.selectedSprint).length;
-}
-
-getStatusPercentage(status: 'backlog' | 'todo' | 'inProgress' | 'review' | 'done'): number {
-  const stats = this.getReportStats();
-  if (stats.totalTasks === 0) return 0;
-  
-  const count = this.getStatusCount(status);
-  return Math.round((count / stats.totalTasks) * 100);
-}
-
-getLabelStats() {
-  let allTasks: Task[] = [];
-  
-  if (this.selectedSprint === 'All Sprints') {
-    allTasks = [
-      ...this.tasks.backlog,
-      ...this.tasks.todo,
-      ...this.tasks.inProgress,
-      ...this.tasks.review,
-      ...this.tasks.done
-    ];
-  } else {
-    allTasks = [
-      ...this.tasks.backlog.filter(t => t.sprint === this.selectedSprint),
-      ...this.tasks.todo.filter(t => t.sprint === this.selectedSprint),
-      ...this.tasks.inProgress.filter(t => t.sprint === this.selectedSprint),
-      ...this.tasks.review.filter(t => t.sprint === this.selectedSprint),
-      ...this.tasks.done.filter(t => t.sprint === this.selectedSprint)
-    ];
+  closeTaskDetails(): void {
+    this.showTaskDetails = false;
+    this.selectedTask = null;
+    this.resetTaskForm();
   }
 
-  const labels = ['BILLING', 'ACCOUNTS', 'FORMS', 'FEEDBACK'];
-  const labelStats = labels.map(label => {
-    const count = allTasks.filter(t => t.label === label).length;
-    const percentage = allTasks.length > 0 ? Math.round((count / allTasks.length) * 100) : 0;
-    return { name: label, count, percentage };
-  });
+  
 
-  return labelStats.filter(stat => stat.count > 0);
+  // ========================================
+  // TEAM MANAGEMENT - FIXED
+  // ========================================
+
+openTeamModal(): void {
+  console.log('Opening team modal');  // हा line ADD करा debug साठी
+  
+  this.showAddTask = false;
+  this.showTaskDetails = false;
+  this.showTeamModal = true;  // हे TRUE होतंय का ते पहा
+  
+  this.newTeamMemberName = '';
+  this.newTeamMemberInitials = '';
+  this.newTeamMemberRole = '';
+  this.newTeamMemberEmail = '';
 }
 
-getPriorityStats() {
-  let allTasks: Task[] = [];
-  
-  if (this.selectedSprint === 'All Sprints') {
-    allTasks = [
-      ...this.tasks.backlog,
-      ...this.tasks.todo,
-      ...this.tasks.inProgress,
-      ...this.tasks.review,
-      ...this.tasks.done
-    ];
-  } else {
-    allTasks = [
-      ...this.tasks.backlog.filter(t => t.sprint === this.selectedSprint),
-      ...this.tasks.todo.filter(t => t.sprint === this.selectedSprint),
-      ...this.tasks.inProgress.filter(t => t.sprint === this.selectedSprint),
-      ...this.tasks.review.filter(t => t.sprint === this.selectedSprint),
-      ...this.tasks.done.filter(t => t.sprint === this.selectedSprint)
-    ];
+  closeTeamModal(): void {
+    this.showTeamModal = false;
+    this.newTeamMemberName = '';
+    this.newTeamMemberInitials = '';
+    this.newTeamMemberRole = '';
+    this.newTeamMemberEmail = '';
   }
 
-  const priorities: Array<'Critical' | 'High' | 'Medium' | 'Low'> = ['Critical', 'High', 'Medium', 'Low'];
-  const priorityStats = priorities.map(priority => {
-    const count = allTasks.filter(t => t.priority === priority).length;
-    const percentage = allTasks.length > 0 ? Math.round((count / allTasks.length) * 100) : 0;
-    return { name: priority, count, percentage };
-  });
-
-  return priorityStats.filter(stat => stat.count > 0);
-}
-
-getPriorityBarColor(priority: string): string {
-  const colors: { [key: string]: string } = {
-    'Critical': 'bg-red-500',
-    'High': 'bg-orange-500',
-    'Medium': 'bg-yellow-500',
-    'Low': 'bg-green-500'
-  };
-  return colors[priority] || 'bg-gray-500';
-}
-
-getTeamStats() {
-  let allTasks: Task[] = [];
-  
-  if (this.selectedSprint === 'All Sprints') {
-    allTasks = [
-      ...this.tasks.backlog,
-      ...this.tasks.todo,
-      ...this.tasks.inProgress,
-      ...this.tasks.review,
-      ...this.tasks.done
-    ];
-  } else {
-    allTasks = [
-      ...this.tasks.backlog.filter(t => t.sprint === this.selectedSprint),
-      ...this.tasks.todo.filter(t => t.sprint === this.selectedSprint),
-      ...this.tasks.inProgress.filter(t => t.sprint === this.selectedSprint),
-      ...this.tasks.review.filter(t => t.sprint === this.selectedSprint),
-      ...this.tasks.done.filter(t => t.sprint === this.selectedSprint)
-    ];
+  addTeamMember(): void {
+    if (this.newTeamMemberName.trim() && this.newTeamMemberInitials.trim()) {
+      const colors = ['bg-purple-500', 'bg-pink-500', 'bg-blue-500', 'bg-red-500', 'bg-green-500', 'bg-yellow-500', 'bg-indigo-500'];
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      
+      // Generate email if not provided
+      const email = this.newTeamMemberEmail || 
+                    `${this.newTeamMemberName.toLowerCase().replace(/\s+/g, '.')}@company.com`;
+      
+      const newMember: TeamMember = {
+        id: Date.now(),
+        name: this.newTeamMemberName,
+        initials: this.newTeamMemberInitials.toUpperCase(),
+        color: randomColor,
+        email: email,
+        role: this.newTeamMemberRole || 'Team Member'
+      };
+      
+      this.teamMembers.push(newMember);
+      this.saveTeamMembersToStorage();
+      this.closeTeamModal();
+    } else {
+      alert('Please fill in name and initials!');
+    }
   }
 
-  const assignees = [...new Set(allTasks.map(t => t.assignee))];
-  
-  return assignees.map(assignee => {
-    const memberTasks = allTasks.filter(t => t.assignee === assignee);
-    const totalTasks = memberTasks.length;
-    const completed = memberTasks.filter(t => t.status === 'done').length;
-    const inProgress = memberTasks.filter(t => t.status === 'inProgress').length;
-    const points = memberTasks.reduce((sum, task) => sum + task.points, 0);
-    const completionRate = totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : 0;
+  removeTeamMember(id: number): void {
+    if (confirm('Remove this team member?')) {
+      this.teamMembers = this.teamMembers.filter(tm => tm.id !== id);
+      this.saveTeamMembersToStorage();
+    }
+  }
+
+  // ========================================
+  // REPORTS & ANALYTICS METHODS
+  // ========================================
+
+  getReportStats() {
+    let allTasks: Task[] = [];
+    
+    if (this.selectedSprint === 'All Sprints') {
+      allTasks = [
+        ...this.tasks.backlog,
+        ...this.tasks.todo,
+        ...this.tasks.inProgress,
+        ...this.tasks.review,
+        ...this.tasks.done
+      ];
+    } else {
+      allTasks = [
+        ...this.tasks.backlog.filter(t => t.sprint === this.selectedSprint),
+        ...this.tasks.todo.filter(t => t.sprint === this.selectedSprint),
+        ...this.tasks.inProgress.filter(t => t.sprint === this.selectedSprint),
+        ...this.tasks.review.filter(t => t.sprint === this.selectedSprint),
+        ...this.tasks.done.filter(t => t.sprint === this.selectedSprint)
+      ];
+    }
+
+    const totalTasks = allTasks.length;
+    const completedTasks = allTasks.filter(t => t.status === 'done').length;
+    const inProgressTasks = allTasks.filter(t => t.status === 'inProgress').length;
+    const totalPoints = allTasks.reduce((sum, task) => sum + task.points, 0);
+    const completedPoints = allTasks.filter(t => t.status === 'done').reduce((sum, task) => sum + task.points, 0);
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
     return {
-      assignee,
       totalTasks,
-      completed,
-      inProgress,
-      points,
+      completedTasks,
+      inProgressTasks,
+      totalPoints,
+      completedPoints,
       completionRate
     };
-  });
+  }
+
+  onStatusChange(task: Task, newStatus: string): void {
+  const oldStatus = task.status as 'backlog' | 'todo' | 'inProgress' | 'review' | 'done';
+  const status = newStatus as 'backlog' | 'todo' | 'inProgress' | 'review' | 'done';
+  
+  if (oldStatus !== status) {
+    this.tasks[oldStatus] = this.tasks[oldStatus].filter(t => t.id !== task.id);
+    task.status = status;
+    this.tasks[status].push(task);
+    this.saveTasksToStorage();
+    console.log(`Task "${task.title}" moved from ${oldStatus} to ${status}`);
+  }
 }
 
+  
+  // ========================================
+  // SPRINT FUNCTIONALITY
+  // ========================================
   // ========================================
   // SPRINT FUNCTIONALITY
   // ========================================
@@ -435,16 +530,40 @@ getTeamStats() {
       return;
     }
 
-    // Backlog मधील सर्व tasks TO DO मध्ये move करतो
     backlogTasks.forEach(task => {
-      this.moveTask(task.id, 'todo');
+      // Remove from backlog
+      this.tasks.backlog = this.tasks.backlog.filter(t => t.id !== task.id);
+      // Update status and add to todo
+      task.status = 'todo';
+      this.tasks.todo.push(task);
     });
 
-    alert(`${this.selectedSprint} started!  `);
-
     this.saveTasksToStorage();
-    
-    // Board view वर जा
+    alert(`${this.selectedSprint} started! ${backlogTasks.length} tasks moved to TODO.`);
     this.activeView = 'board';
   }
+
+  moveTaskFromBacklog(task: Task, event: Event): void {
+    const newStatus = (event.target as HTMLSelectElement).value as 'backlog' | 'todo' | 'inProgress' | 'review' | 'done';
+    const oldStatus = task.status;
+
+    if (oldStatus !== newStatus) {
+      // Remove from old status
+      this.tasks[oldStatus] = this.tasks[oldStatus].filter(t => t.id !== task.id);
+      
+      // Update task status
+      task.status = newStatus;
+      
+      // Add to new status
+      this.tasks[newStatus].push(task);
+      
+      // Save to storage
+      this.saveTasksToStorage();
+      
+      console.log(`Task "${task.title}" moved from ${oldStatus} to ${newStatus}`);
+    }
+  }
 }
+  
+
+
